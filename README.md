@@ -3,8 +3,7 @@
 # 🧠 ARC-Core Lab
 ### **The Solitude Protocol · Howell Stark**
 
-[EN](README_EN.md) | [CN](README.md)
-[PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
+[EN](README_EN.md) | [CN](README.md) | [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
 
 > **“孤独是构造力的燃料，沉默是思想的放大器。”**  
 > **“当你不再被输入定义，你才开始输出自己。”**

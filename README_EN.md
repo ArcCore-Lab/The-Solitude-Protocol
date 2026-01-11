@@ -3,8 +3,7 @@
 # 🧠 ARC-Core Lab
 ### **The Solitude Protocol · Howell Stark**
 
-[EN](README_EN.md) | [CN](README.md)
-[PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
+[EN](README_EN.md) | [CN](README.md) | [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
 
 > **"Solitude is the fuel of creation; silence is the amplifier of thought."**  
 > **"When you cease to be defined by input, you begin to output yourself."**
