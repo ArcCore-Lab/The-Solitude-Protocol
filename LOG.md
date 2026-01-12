@@ -17,6 +17,21 @@ The workspace has been initialized, the build toolchain (`gcc`, `make`, `gdb`) c
 
 ---
 
+## 💤 Day 1: Idle server
+
+**Date:** 2025-01-12  
+**Status:** Systems Green.
+
+**Log:**
+
+Today marks the first day of the protocol. It's been quite tough, but I managed to stick through it. In form it might slightly violate principles, but not in spirit. It should gradually get on track later.
+
+To today's tasks, there were no major difficulties; the main challenge was understanding the documentation and spending some time debugging code errors.
+
+Only summarized into these points:
+1. Pay attention to small details like syntax and variable names, for example, the third argument of function `accept` in `connfd = accept(listenfd, (SA *) &cliaddr, &clilen);` is must be a pointer.;
+2. If debugging results on the local machine are not ideal, try switching to a virtual machine or a new computer.
+
 ---
 
 <div align="center">
