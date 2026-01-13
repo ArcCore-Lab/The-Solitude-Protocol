@@ -1,3 +1,9 @@
+/*
+    Simple HTTP/0.9 echo server – do NOT test with normal HTTP way.
+        - `$nc localhost 9877` (Once connected, anything you type will be echoed back verbatim.)
+        - `$echo -n "hello" | curl --http0.9 --data-binary @- localhost:9877`
+*/
+
 #include "unp_day01.h"
 
 void str_echo(int sockfd) {

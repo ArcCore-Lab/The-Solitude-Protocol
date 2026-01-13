@@ -53,23 +53,11 @@ void err_quit(const char *fmt, ...)
     exit(1);
 }
 
-// src/tcpserver.c
-void str_echo(int sockfd)
-{
-    size_t n;
-    char buf[MAXLINE];
-    char response[] = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello Server";
+// src/Day01/idle_server.c
+void str_echo(int sockfd) {
+    char response[] = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello Server\n";
 
-again:
-    while ( (n = read(sockfd, buf, MAXLINE)) > 0 ) {
-        write(sockfd, response, strlen(response));
-    }
-
-    if (n < 0 && errno == EINTR){
-        goto again;
-    } else if (n < 0) {
-        err_sys("str_echo: read error");
-    }
+    write(sockfd, response, strlen(response));
 }
 
 int main(int argc, char **argv) {

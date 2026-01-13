@@ -1,3 +1,8 @@
+/*
+    A dumb HTTP/0.9 echo server — hack it into a real one at will.
+    Maybe a client).
+*/
+
 #include "include/unp.h"
 
 void str_cli(FILE *fp, int sockfd) {
@@ -6,7 +11,7 @@ void str_cli(FILE *fp, int sockfd) {
     while (fgets(sendline, MAXLINE, fp) != NULL) {
         write(sockfd, sendline, strlen(sendline));
 
-        if (Readline(sockfd, recvline, MAXLINE) == 0){
+        if (Readline(sockfd, recvline, MAXLINE) == 0) {
             err_quit("str_cli: server terminated permaturely");
         }
 
@@ -29,7 +34,7 @@ int main(int argc, char **argv) {
     servaddr.sin_port = htons(SERV_PORT);
     inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 
-    connect(sockfd, (SA *)&servaddr, sizeof(servaddr));
+    connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
 
     str_cli(stdin, sockfd);
 

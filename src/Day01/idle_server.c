@@ -1,20 +1,17 @@
+/*
+    Maybe HTTP/1.1 Server — then you can finally test it the normal way!
+*/
+
 #include "include/unp.h"
 
-void str_echo(int sockfd) {
-    size_t n;
-    char buf[MAXLINE];
-    char response[] = "TTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello World!";
+void echo_hello(int sockfd) {
+    const char response[] = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: 12\r\n\r\n"
+        "Hello World!\n";
 
-again:
-    while ( (n = read(sockfd, buf, MAXLINE)) > 0 ) {
-        write(sockfd, response, strlen(response));
-    }
-
-    if (n < 0 && errno == EINTR) {
-        goto again;
-    } else if (n < 0) {
-        err_sys("str_echo: read error");
-    }
+    write(sockfd, response, strlen(response));
 }
 
 int main(int argc, char **argv) {
@@ -36,9 +33,9 @@ int main(int argc, char **argv) {
     for (;;) {
         clilen = sizeof(cliaddr);
         connfd = accept(listenfd, (SA *)&cliaddr, &clilen);
-        if ( (childpid == fork()) == 0) {
+        if ( (childpid = fork()) == 0) {
             close(listenfd);
-            str_echo(connfd);
+            echo_hello(connfd);
             exit(0);
         }
         close(connfd);

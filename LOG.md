@@ -2,7 +2,7 @@
 
 ---
 
-## 🗓️ Day 0: Tranquility before the storm
+## 🗓️ Day 00: Tranquility before the storm
 
 **Date:** 2025-01-11  
 **Status:** Environment Locked. Systems Green.
@@ -17,7 +17,7 @@ The workspace has been initialized, the build toolchain (`gcc`, `make`, `gdb`) c
 
 ---
 
-## 💤 Day 1: Idle server
+## 💤 Day 01: Idle server (echo "Hello World!")
 
 **Date:** 2025-01-12  
 **Status:** Systems Green.
@@ -31,6 +31,24 @@ To today's tasks, there were no major difficulties; the main challenge was under
 Only summarized into these points:
 1. Pay attention to small details like syntax and variable names, for example, the third argument of function `accept` in `connfd = accept(listenfd, (SA *) &cliaddr, &clilen);` is must be a pointer.;
 2. If debugging results on the local machine are not ideal, try switching to a virtual machine or a new computer.
+
+---
+
+## 🌌 Day 02: Parsers the HTTP request (Method & Path)
+
+**Date:** 2025-01-13  
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is better than yesterday, and I gradually get used to this rhythm. I really follow that principle of "improve a little every day", I can found many bugs that I didn't notice before and know how to make my code better.
+
+So today's summary:
+1. When reading data from the socket, be aware of partial reads and handle them properly by checking for the end of the HTTP headers (`\r\n\r\n`).🙂‍↕️
+2. Parsing character is more difficult than I thought. When you handle strings in C, pointers and memory management are crucial. I had learnt it well before, but now I recoginze what I know is not enough and understand it more deeply.🤔
+3. Never write `Content-Length` header manually. Always calculate it based on the actual body length to avoid mismatches.😭
 
 ---
 
