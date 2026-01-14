@@ -1,29 +1,11 @@
 /*
-    Simple HTTP/0.9 echo server – do NOT test with normal HTTP way.
-        - `$nc localhost 9877` (Once connected, anything you type will be echoed back verbatim.)
-        - `$echo -n "hello" | curl --http0.9 --data-binary @- localhost:9877`
+    Static file server ready!
 */
 
 #include "include/unp.h"
 #include "lib/tsp.h"
 
-void str_echo(int sockfd) {
-    size_t n;
-    char buf[MAXLINE];
-
-again:
-    while ( (n = read(sockfd, buf, MAXLINE)) > 0 )  {
-        write(sockfd, buf, n);
-    }
-
-    if (n < 0 && errno == EINTR) {
-        goto again;
-    } else if (n < 0) {
-        err_sys("str_echo: read error");
-    }
-}
-
-int main(int argc, char **argv) {
+int main(int agrc, char **argv) {
     int listenfd, connfd;
     pid_t childpid;
     socklen_t clilen;
@@ -37,17 +19,20 @@ int main(int argc, char **argv) {
     servaddr.sin_port = htons(SERV_PORT);
     bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
+    signal(SIGPIPE, SIG_IGN);
+
     listen(listenfd, LISTENQ);
 
     for (;;) {
         clilen = sizeof(cliaddr);
         connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
 
-        if( (childpid = fork()) == 0 ) {
+        if ( (childpid = fork()) == 0 ) {
             close(listenfd);
-            str_echo(connfd);
+            response(connfd);
             exit(0);
         }
+
         close(connfd);
     }
 }

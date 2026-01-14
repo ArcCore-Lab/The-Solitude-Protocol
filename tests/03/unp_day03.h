@@ -4,12 +4,9 @@
 
 #define _GNU_SOURCE
 
-#define SERV_PORT 8080
+#define SERV_PORT 9877
 #define MAXLINE 4096
-#define LISTENQ 1024
 #define MAX_FILE_SIZE 4096
-
-#define SA struct sockaddr
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -34,9 +31,14 @@
 #include <stdlib.h>
 #include <syslog.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <time.h>
-#include <dirent.h>
+
+#define SA struct sockaddr
+
+#define LISTENQ 1024
+
 
 #endif /*_UNP_H*/

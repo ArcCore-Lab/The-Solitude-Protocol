@@ -1,4 +1,9 @@
+/*
+    A minimal HTTP/1.1 server that parses the request path and returns the corresponding response.
+*/
+
 #include "include/unp.h"
+#include "lib/tsp.h"
 
 void echo_resp(int sockfd) {
     const char *body;
