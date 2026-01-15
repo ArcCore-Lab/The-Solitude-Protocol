@@ -70,6 +70,19 @@ Today's summary:
 
 ---
 
+### 🌌 Day 04: Keep-alive
+
+**Date:** 2025-01-15  
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today I learned about `select` and `poll` system calls, which are used for multiplexing I/O. It was quite challenging to understand how they work. And today a few unexpected things happened... it was my first retreat, after all, so some issues weren't handled perfectly. But I learned a lot from the experience. And I can say proudly that the mission was essentially completed. I'll patch the issues tomorrow and it'll be fine. 
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

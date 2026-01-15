@@ -35,4 +35,6 @@ char *scanner(const char *filename, int *status_code);
 */
 void response(int sockfd);
 
+void str_cli(FILE *fp, int sockfd);
+
 #endif /* _TSP_H */

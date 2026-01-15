@@ -1,4 +1,5 @@
 #include "include/unp.h"
+#include "tsp.h"
 
 static char *search_in_dir(const char *dir, const char *filename) {
     DIR *dp;
