@@ -1,4 +1,4 @@
-#include "unp_day03.h"
+#include "unp_day05.h"
 
 // lib/error.c
 int deamon_proc;
@@ -53,42 +53,9 @@ void err_quit(const char *fmt, ...)
     exit(1);
 }
 
-// lib/parser.c
-char *parser(int sockfd)
-{
-    char line[MAXLINE];
-    char *path;
-    char *ptr, *space;
-    size_t n;
-
-    for (ptr = line; ptr < &line[MAXLINE - 1]; ptr++)
-    {
-        if ((n = read(sockfd, ptr, 1)) != 1)
-            break;
-        if (*ptr == '\n')
-        {
-            ptr++;
-            break;
-        }
-    }
-    *ptr = '\0';
-
-    ptr = strchr(line, ' ');
-    if (!ptr)
-        return strdup("");
-    ptr++;
-
-    space = strchr(ptr, ' ');
-    if (space)
-        *space = '\0';
-
-    path = strdup(ptr);
-
-    return path;
-}
-
 // lib/scanner.c
-static char *search_in_dir(const char *dir, const char *filename) {
+static char *search_in_dir(const char *dir, const char *filename)
+{
     int fd;
     DIR *dp;
     size_t size, n;
@@ -97,31 +64,46 @@ static char *search_in_dir(const char *dir, const char *filename) {
     struct dirent *ent;
     char *result = NULL;
 
-    if( (dp = opendir(dir)) == NULL ) return NULL;
+    if ((dp = opendir(dir)) == NULL)
+        return NULL;
 
-    while ((ent = readdir(dp))) {
-        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
+    while ((ent = readdir(dp)))
+    {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            continue;
 
         snprintf(path, sizeof(path), "%s/%s", dir, ent->d_name);
 
-        if (stat(path, &st) != 0) continue;
+        if (stat(path, &st) != 0)
+            continue;
 
-        if(S_ISDIR(st.st_mode)) {
+        if (S_ISDIR(st.st_mode))
+        {
             result = search_in_dir(path, filename);
-            if (result) break;
-        } else if (S_ISREG(st.st_mode)) {
-            if (strcmp(ent->d_name, filename) == 0) {
+            if (result)
+                break;
+        }
+        else if (S_ISREG(st.st_mode))
+        {
+            if (strcmp(ent->d_name, filename) == 0)
+            {
                 fd = open(path, O_RDONLY);
-                if (fd == -1) break;
+                if (fd == -1)
+                    break;
 
                 size = (size_t)st.st_size;
-                if (size > MAX_FILE_SIZE) size = MAX_FILE_SIZE;
+                if (size > MAX_FILE_SIZE)
+                    size = MAX_FILE_SIZE;
 
                 result = malloc(size + 1);
-                if (result) {
-                    if ( (n = read(fd, result, size)) > 0 ) {
+                if (result)
+                {
+                    if ((n = read(fd, result, size)) > 0)
+                    {
                         result[n] = '\0';
-                    } else {
+                    }
+                    else
+                    {
                         free(result);
                         result = NULL;
                     }
@@ -137,7 +119,8 @@ static char *search_in_dir(const char *dir, const char *filename) {
     return result;
 }
 
-char *scanner(const char *filename, int *status_code) {
+char *scanner(const char *filename, int *status_code)
+{
     char *content;
     struct stat st;
     size_t size, n;
@@ -146,34 +129,44 @@ char *scanner(const char *filename, int *status_code) {
     const char *path404 = "../static/404.html";
 
     content = search_in_dir("../static", filename);
-    if (content) {
+    if (content)
+    {
         *status_code = 200;
         return content;
     }
 
-    if (stat(path404, &st) != 0) {
+    if (stat(path404, &st) != 0)
+    {
         *status_code = 404;
         return strdup("Oops! It seems developer made a little mistake!");
     }
 
     fd = open(path404, O_RDONLY);
-    if (fd == -1) {
+    if (fd == -1)
+    {
         *status_code = 404;
         return strdup("Oops! It seems developer made a little mistake!");
     }
 
     size = (size_t)st.st_size;
-    if (size > MAX_FILE_SIZE) size = MAX_FILE_SIZE;
+    if (size > MAX_FILE_SIZE)
+        size = MAX_FILE_SIZE;
 
     content = malloc(size + 1);
-    if (content) {
-        if ( (n = read(fd, content, size)) > 0 ) {
+    if (content)
+    {
+        if ((n = read(fd, content, size)) > 0)
+        {
             content[n] = '\0';
-        } else {
+        }
+        else
+        {
             free(content);
             content = strdup("Oops! It seems developer made a little mistake!");
         }
-    } else {
+    }
+    else
+    {
         content = strdup("Oops! It seems developer made a little mistake!");
     }
 
@@ -183,46 +176,57 @@ char *scanner(const char *filename, int *status_code) {
     return content;
 }
 
-// lib/resp_fork.c
-void response(int sockfd) {
-    char *uri, *filename, *body;
+// lib/resp_epoll.c
+void response(int sockfd, char *buf, ssize_t n)
+{
+    char *filename, *body;
+    char *ptr, *space;
     int status_code;
     char header[256];
+
     const char msg400[] =
         "HTTP/1.1 400 Bad Request\r\n"
         "Content-Length: 0\r\n"
         "Connection: close\r\n\r\n";
 
-    uri = parser(sockfd);
-    if (!uri) {
+    ptr = strchr(buf, ' ');
+    if (!ptr)
+    {
         write(sockfd, msg400, strlen(msg400));
         return;
     }
+    ptr++;
+    space = strchr(ptr, ' ');
+    if (space)
+        *space = '\0';
 
-    filename = (*uri == '/') ? uri + 1 : uri;
+    filename = (*ptr == '/') ? ptr + 1 : ptr;
     body = scanner(filename, &status_code);
 
     snprintf(header, sizeof(header),
              "HTTP/1.1 %d %s\r\n"
              "Content-Type: text/html\r\n"
              "Content-Length: %zu\r\n"
-             "Connection: close\r\n\r\n", 
-             status_code, 
-             (status_code == 200) ? "OK" : "Not Found", 
+             "Connection: keep-alive\r\n"
+             "Keep-Alive: timeout=8\r\n\r\n",
+             status_code,
+             (status_code == 200) ? "OK" : "Not Found",
              strlen(body));
 
     write(sockfd, header, strlen(header));
     write(sockfd, body, strlen(body));
 
     free(body);
-    free(uri);
 }
 
-// src/Day03/respstatfile.c
+// src/Day05/tcpserv_epoll.c
 int main(int argc, char **argv) {
-    int listenfd, connfd;
-    pid_t childpid;
+    int i, maxi, listenfd, connfd, sockfd;
+    int nready, epfd;
+    ssize_t n;
+    char buf[MAXLINE];
     socklen_t clilen;
+    struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -231,22 +235,49 @@ int main(int argc, char **argv) {
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(SERV_PORT);
-    bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
-    signal(SIGPIPE, SIG_IGN);
+    bind(listenfd, (SA *)&servaddr, sizeof(servaddr));
 
     listen(listenfd, LISTENQ);
+    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0) err_sys("fcntl O_NONBLOCK error");
+
+    if ( (epfd = epoll_create(MAXFD)) < 0 ) err_sys("epoll_create error");
+
+    ev.events = EPOLLIN;
+    ev.data.fd = listenfd;
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) < 0) err_sys("epoll_ctl add listenfd error");
 
     for (;;) {
-        clilen = sizeof(cliaddr);
-        connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
+        nready = epoll_wait(epfd, events, MAXFD, KEEPALIVE_TIMEOUT);
 
-        if ( (childpid = fork()) == 0 ) {
-            close(listenfd);
-            response(connfd);
-            exit(0);
+        if (nready < 0) {
+            if (errno == EINTR) continue;
+            err_sys("epoll_wait error");
         }
 
-        close(connfd);
+        for (i = 0; i < nready; i++) {
+            sockfd = events[i].data.fd;
+
+            if (sockfd == listenfd) {
+                clilen = sizeof(cliaddr);
+                connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
+                if (fcntl(connfd, F_SETFL, O_NONBLOCK) < 0) err_sys("fcntl O_NONBLOCK error");
+
+                ev.events = EPOLLIN;
+                ev.data.fd = connfd;
+
+                epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
+            } else if (events[i].events & EPOLLIN) {
+                if ( (n = read(sockfd, buf, MAXLINE)) <= 0 ) {
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
+                    close(sockfd);
+                } else {
+                    response(sockfd, buf, n);
+                }
+            }
+        }
     }
+
+    close(epfd);
+    return 0;
 }

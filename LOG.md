@@ -70,7 +70,7 @@ Today's summary:
 
 ---
 
-### 🌌 Day 04: Keep-alive
+## 🌌 Day 04: Keep-alive
 
 **Date:** 2025-01-15  
 **Status:** Systems Green.
@@ -80,6 +80,23 @@ Today's summary:
 Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
 
 Today I learned about `select` and `poll` system calls, which are used for multiplexing I/O. It was quite challenging to understand how they work. And today a few unexpected things happened... it was my first retreat, after all, so some issues weren't handled perfectly. But I learned a lot from the experience. And I can say proudly that the mission was essentially completed. I'll patch the issues tomorrow and it'll be fine. 
+
+---
+
+## 🌠 Day 05: Refactor with epoll
+
+**Date:** 2025-01-16  
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+The function of `epoll` is similar to `select` and `poll`, but it is more efficient for handling a large number of file descriptors. But they're all difficult to understand. However, there is no denying that all of them are very elegant. I have to admire the designers of these system calls again. They are truly geniuses.
+
+OK, today's summary:
+1. `epoll` is more efficient than `select` and `poll` for handling a large number of file descriptors. And its logic is more simple than `select` and `poll`.👍 Actually, having two different logics in my mind is making me a bit confused.😵
+2.  Be careful when coding!!! Maybe a small typo can lead to big problems.😓
 
 ---
 

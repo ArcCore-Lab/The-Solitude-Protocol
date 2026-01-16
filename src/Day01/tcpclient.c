@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     struct sockaddr_in servaddr;
 
     if (argc != 2) {
-        err_quit("usage: tcplic <IPaddress>");
+        err_quit("usage: tcpclient <IPaddress>");
     }
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);

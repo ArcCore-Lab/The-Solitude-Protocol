@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
 
             FD_SET(connfd, &allset);
             if (connfd > maxfd) maxfd = connfd;
+            
             if (i > maxi) maxi = i;
 
             if (--nready <= 0) continue;

@@ -56,12 +56,20 @@ void err_quit(const char *fmt, ...)
 // src/Day04/tcpserv_poll.c
 int main(int argc, char **argv) {
     int i, maxi, listenfd, connfd, sockfd;
-    int nready;
+    int nready, timeout;
     ssize_t n;
     char buf[MAXLINE];
     socklen_t clilen;
     struct pollfd client[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
+    static const char http_resp[] =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Connection: keep-alive\r\n"
+        "Keep-Alive: timeout=8\r\n"
+        "Content-Length: 5\r\n"
+        "\r\n"
+        "pong\n";
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -81,7 +89,20 @@ int main(int argc, char **argv) {
     maxi = 0;
 
     for (;;) {
-        nready = poll(client, maxi + 1, INFTIM);
+        timeout = KEEPALIVE_TIMEOUT;
+        nready = poll(client, maxi + 1, timeout);
+
+        if (nready == 0) {
+            for (i = 1; i <= maxi; i++) {
+                if ( (sockfd = client[i].fd) < 0 ) continue;
+
+                close(sockfd);
+                client[i].fd = -1;
+            }
+            continue;
+        }
+
+        if (nready < 0 && errno != EINTR) err_sys("poll error");
 
         if (client[0].revents & POLLRDNORM) {
             clilen = sizeof(cliaddr);
@@ -107,19 +128,15 @@ int main(int argc, char **argv) {
             if ( (sockfd = client[i].fd) < 0 ) continue;
 
             if (client[i].revents & (POLLRDNORM | POLLERR)) {
-                if ( (n = read(sockfd, buf, MAXLINE)) == 0 ) {
-                    if (errno == ECONNRESET) {
-                        close(sockfd);
-                        client[i].fd = -1;
-                    } else {
-                        err_sys("read error");
-                    }
-                } else if (n == 0) {
+                if ( (n = read(sockfd, buf, MAXLINE)) <= 0 ) {
                     close(sockfd);
                     client[i].fd = -1;
-                } else {
-                    write(sockfd, buf, n);
+                    continue;
                 }
+
+                write(sockfd, http_resp, sizeof(http_resp) - 1);
+
+                client[i].events = POLLRDNORM;
 
                 if (--nready <= 0) break;
             }

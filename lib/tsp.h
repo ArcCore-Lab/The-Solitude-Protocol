@@ -32,9 +32,20 @@ char *scanner(const char *filename, int *status_code);
 /*
     Send HTTP response to sockfd.
     The response includes the status line, headers, and body.
+    Just for fork-based server.
 */
-void response(int sockfd);
+void resp_fork(int sockfd);
 
+/*
+    Send HTTP response to sockfd.
+    The response includes the status line, headers, and body.
+    Just for epoll-based server.
+*/
+void resp_epoll(int sockfd, char *buf, ssize_t n);
+
+/*
+    Client-side function to handle communication with the server.
+*/
 void str_cli(FILE *fp, int sockfd);
 
 #endif /* _TSP_H */

@@ -29,7 +29,7 @@ int main(int agrc, char **argv) {
 
         if ( (childpid = fork()) == 0 ) {
             close(listenfd);
-            response(connfd);
+            resp_fork(connfd);
             exit(0);
         }
 

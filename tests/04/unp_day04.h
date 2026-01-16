@@ -10,6 +10,7 @@
 
 #define MAXFD 65536
 #define INFTIM (-1)
+#define KEEPALIVE_TIMEOUT 8000
 
 #include <sys/socket.h>
 #include <sys/types.h>
