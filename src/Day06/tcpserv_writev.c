@@ -1,7 +1,3 @@
-/*
-    
-*/
-
 #include "include/unp.h"
 #include "lib/tsp.h"
 
@@ -14,6 +10,8 @@ int main(int argc, char **argv) {
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
 
+    signal(SIGPIPE, SIG_IGN);
+
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
     bzero(&servaddr, sizeof(servaddr));
@@ -24,11 +22,11 @@ int main(int argc, char **argv) {
     bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
     listen(listenfd, LISTENQ);
-    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0) 
+
+    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0)
         err_sys("fcntl O_NONBLOCK error");
 
     epfd = epoll_create(MAXFD);
-
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
@@ -41,9 +39,12 @@ int main(int argc, char **argv) {
 
             if (sockfd == listenfd) {
                 clilen = sizeof(cliaddr);
-                connfd = accept(listenfd, (SA *) &servaddr, &clilen);
-                if(fcntl(connfd, F_SETFL, O_NONBLOCK) < 0) 
+                connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
+
+                if (fcntl(connfd, F_SETFL, O_NONBLOCK))
                     err_sys("fcntl O_NONBLOCK error");
+
+                conn_init(connfd);
 
                 ev.events = EPOLLIN;
                 ev.data.fd = connfd;
@@ -53,7 +54,19 @@ int main(int argc, char **argv) {
                     epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
                     close(sockfd);
                 } else {
-                    resp_epoll(sockfd, buf, n);
+                    resp_fork(sockfd, buf, n);
+
+                    if (conns[sockfd].w_pending) {
+                        ev.events = EPOLLIN | EPOLLOUT;
+                        ev.data.fd = sockfd;
+                        epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
+                    }
+                }
+            } else if (events[i].events & EPOLLOUT) {
+                if (flush_write_buffer(sockfd) == 0) {
+                    ev.events = EPOLLIN;
+                    ev.data.fd = sockfd;
+                    epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
                 }
             }
         }

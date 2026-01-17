@@ -1,4 +1,4 @@
-#include "unp_day05.h"
+#include "unp_day06.h"
 
 // lib/error.c
 int deamon_proc;
@@ -176,13 +176,117 @@ char *scanner(const char *filename, int *status_code)
     return content;
 }
 
+// lib/pre_connection.c
+typedef struct {
+    int fd;
+    char w_buf[MAXLINE];
+    size_t w_used;
+    size_t w_sent;
+    int w_pending;
+} conn_t;
+
+conn_t conns[MAXFD];
+
+void conn_init(int fd) {
+    conns[fd].fd = fd;
+    conns[fd].w_used = 0;
+    conns[fd].w_sent = 0;
+    conns[fd].w_pending = 0;
+}
+
+int flush_write_buffer(int sockfd) {
+    ssize_t n;
+    size_t remain;
+    conn_t *conn = &conns[sockfd];
+
+    remain = conn->w_used - conn->w_sent;
+
+    if (remain == 0) return 0;
+
+    if ( (n = write(sockfd, conn->w_buf + conn->w_sent, remain)) < 0 ) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return -1;
+        }
+
+        return -1;
+    }
+
+    conn->w_sent += n;
+
+    if (conn->w_sent == conn->w_used) {
+        conn->w_used = 0;
+        conn->w_sent = 0;
+        conn->w_pending = 0;
+
+        return 0;
+    }
+
+    return -1;
+}
+
+void buffered_writev(int sockfd, struct iovec *iov, int iovcnt) {
+    int i;
+    ssize_t n;
+    size_t remain, offset, copy_len;
+    size_t total_len = 0;
+    conn_t *conn = &conns[sockfd];
+
+    for (i = 0; i < iovcnt; i++) {
+        total_len += iov[i].iov_len;
+    }
+
+    if (conn->w_used == 0 && conn->w_sent == 0) {
+        if ( (n = writev(sockfd, iov, iovcnt)) < 0 ) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                for (i = 0; i < iovcnt; i++) {
+                    memcpy(conn->w_buf + conn->w_used, iov[i].iov_base, iov[i].iov_len);
+                    conn->w_used += iov[i].iov_len;
+                }
+                conn->w_pending = 1;
+                return;
+            }
+            return;
+        }
+
+        if ((size_t)n == total_len) return;
+
+        remain = total_len - n;
+        offset = n;
+
+        for (i = 0; i < iovcnt; i++) {
+            if (offset >= iov[i].iov_len) {
+                offset -= iov[i].iov_len;
+                continue;
+            }
+
+            copy_len = iov[i].iov_len - offset;
+            memcpy(conn->w_buf + conn->w_used, (char *)iov[i].iov_base + offset, copy_len);
+            conn->w_used += copy_len;
+            offset = 0;
+        }
+
+        conn->w_sent = 0;
+        conn->w_pending = 1;
+        return;
+    }
+
+    for (i = 0; i < iovcnt; i++) {
+        if (conn->w_used + iov[i].iov_len <= sizeof(conn->w_buf)) {
+            memcpy(conn->w_buf + conn->w_used, iov[i].iov_base, iov[i].iov_len);
+            conn->w_used += iov[i].iov_len;
+        }
+    }
+
+    conn->w_pending = 1;
+}
+
 // lib/resp_epoll.c
-void response(int sockfd, char *buf, ssize_t n)
-{
+void response(int sockfd, char *buf, ssize_t n) {
     char *filename, *body;
     char *ptr, *space;
     int status_code;
     char header[256];
+    struct iovec iov[2];
 
     const char msg400[] =
         "HTTP/1.1 400 Bad Request\r\n"
@@ -190,15 +294,14 @@ void response(int sockfd, char *buf, ssize_t n)
         "Connection: close\r\n\r\n";
 
     ptr = strchr(buf, ' ');
-    if (!ptr)
-    {
+    if (!ptr) {
         write(sockfd, msg400, strlen(msg400));
         return;
     }
     ptr++;
+
     space = strchr(ptr, ' ');
-    if (space)
-        *space = '\0';
+    if (space) *space = '\0';
 
     filename = (*ptr == '/') ? ptr + 1 : ptr;
     body = scanner(filename, &status_code);
@@ -213,21 +316,31 @@ void response(int sockfd, char *buf, ssize_t n)
              (status_code == 200) ? "OK" : "Not Found",
              strlen(body));
 
-    write(sockfd, header, strlen(header));
-    write(sockfd, body, strlen(body));
+    // write(sockfd, header, strlen(header));
+    // write(sockfd, body, strlen(body));
+
+    iov[0].iov_base = header;
+    iov[0].iov_len = strlen(header);
+    iov[1].iov_base = body;
+    iov[1].iov_len = strlen(body);
+
+    // writev(sockfd, iov, 2);
+    buffered_writev(sockfd, iov, 2);
 
     free(body);
 }
 
-// src/Day05/tcpserv_epoll.c
+// src/Day06/tcpserv_writev.c
 int main(int argc, char **argv) {
-    int i, listenfd, connfd, sockfd;
-    int nready, epfd;
+    int listenfd, connfd, sockfd;
+    int i, epfd, nready;
     ssize_t n;
-    char buf[MAXLINE];
     socklen_t clilen;
+    char buf[MAXLINE];
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
+
+    signal(SIGFPE, SIG_IGN);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -236,24 +349,19 @@ int main(int argc, char **argv) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(SERV_PORT);
 
-    bind(listenfd, (SA *)&servaddr, sizeof(servaddr));
+    bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
     listen(listenfd, LISTENQ);
-    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0) err_sys("fcntl O_NONBLOCK error");
+    if(fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0)
+        err_sys("fcntl O_NONBLOCK error");
 
-    if ( (epfd = epoll_create(MAXFD)) < 0 ) err_sys("epoll_create error");
-
+    epfd = epoll_create(MAXFD);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
-    if (epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) < 0) err_sys("epoll_ctl add listenfd error");
+    epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
 
     for (;;) {
         nready = epoll_wait(epfd, events, MAXFD, KEEPALIVE_TIMEOUT);
-
-        if (nready < 0) {
-            if (errno == EINTR) continue;
-            err_sys("epoll_wait error");
-        }
 
         for (i = 0; i < nready; i++) {
             sockfd = events[i].data.fd;
@@ -261,11 +369,14 @@ int main(int argc, char **argv) {
             if (sockfd == listenfd) {
                 clilen = sizeof(cliaddr);
                 connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
-                if (fcntl(connfd, F_SETFL, O_NONBLOCK) < 0) err_sys("fcntl O_NONBLOCK error");
+
+                if (fcntl(connfd, F_SETFL, O_NONBLOCK) < 0)
+                    err_sys("fcntl O_NONBLOCK error");
+
+                conn_init(connfd);
 
                 ev.events = EPOLLIN;
                 ev.data.fd = connfd;
-
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
             } else if (events[i].events & EPOLLIN) {
                 if ( (n = read(sockfd, buf, MAXLINE)) <= 0 ) {
@@ -273,6 +384,18 @@ int main(int argc, char **argv) {
                     close(sockfd);
                 } else {
                     response(sockfd, buf, n);
+
+                    if (conns[sockfd].w_pending) {
+                        ev.events = EPOLLIN | EPOLLOUT;
+                        ev.data.fd = sockfd;
+                        epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
+                    }
+                }
+            } else if (events[i].events & EPOLLOUT) {
+                if (flush_write_buffer(sockfd) == 0) {
+                    ev.events = EPOLLIN;
+                    ev.data.fd = sockfd;
+                    epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
                 }
             }
         }

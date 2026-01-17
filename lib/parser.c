@@ -7,7 +7,7 @@ char *parser(int sockfd) {
     size_t n;
 
     for (ptr = line; ptr < &line[MAXLINE - 1]; ptr++) {
-        if ( (n = read(sockfd, ptr, 1)) != 1) break;
+        if ( (n = read(sockfd, ptr, 1)) != 1 ) break;
 
         if (*ptr == "\n") {
             ptr++;

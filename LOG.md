@@ -100,6 +100,23 @@ OK, today's summary:
 
 ---
 
+## 🌌 Day 06: Write Buffer
+
+**Date:** 2025-01-17  
+**Status:** Systems Green.
+
+**Log:**
+
+"In summary, we should always try to use the fewest number of system calls necessary to get the job done." -- This sentence from *"Unix Network Programming"* really enlightened me today. It made me realize the importance of efficiency in system programming and I will keep it in mind moving forward.
+
+Author day full of insights:
+1. Buffering is crucial for performance. By minimizing the number of write system calls, we can significantly improve throughput.📈
+2. The more I learn, the more I realize how difficult system programming is. I need more time to design functions and more time to understand the underlying principles.⌛Sometimes a little function or a small structure can contain a lot of knowledge.🤯
+3. And importantly, be careful when coding!!! I made a little typo again and it caused a big problem.😓
+4. Oh, it's worth mentioning that when handling a new connection, don't forget to upadte `&ev` structure before calling `epoll_ctl`. Otherwise, it may lead to unexpected behavior. Remember that the array `events` is read-only.💀 
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
