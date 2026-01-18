@@ -107,6 +107,8 @@ OK, today's summary:
 
 **Log:**
 
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
 "In summary, we should always try to use the fewest number of system calls necessary to get the job done." -- This sentence from *"Unix Network Programming"* really enlightened me today. It made me realize the importance of efficiency in system programming and I will keep it in mind moving forward.
 
 Author day full of insights:
@@ -114,6 +116,23 @@ Author day full of insights:
 2. The more I learn, the more I realize how difficult system programming is. I need more time to design functions and more time to understand the underlying principles.⌛Sometimes a little function or a small structure can contain a lot of knowledge.🤯
 3. And importantly, be careful when coding!!! I made a little typo again and it caused a big problem.😓
 4. Oh, it's worth mentioning that when handling a new connection, don't forget to upadte `&ev` structure before calling `epoll_ctl`. Otherwise, it may lead to unexpected behavior. Remember that the array `events` is read-only.💀 
+
+---
+
+## 🌠 Day 07: Memory poll
+
+**Date:** 2025-01-18  
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is not special. And everything goes well. I achieved dynamically allocated buffer pool for each connection. It works well.
+
+Today's summary:
+1. Memory pool can significantly reduce memory allocation overhead and fragmentation. By reusing pre-allocated memory blocks, we can improve performance and reduce latency.🚀
+2. You must have a deep understanding and thorough mastery of every function you use in your code -- its purpose, parameters, return values, and potential pitfalls. This is crucial for writing robust and efficient code.📚
 
 ---
 

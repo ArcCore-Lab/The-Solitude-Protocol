@@ -8,16 +8,41 @@ void conn_init(int fd) {
     conns[fd].w_used = 0;
     conns[fd].w_sent = 0;
     conns[fd].w_pending = 0;
+    conns[fd].w_capacity = BUF_8KB;
+    conns[fd].w_max_size = BUF_MAX;
+    conns[fd].buf = malloc(BUF_8KB);
+    if (!conns[fd].buf){
+        conns[fd].w_pending = -1;
+        return;
+    }
+}
+
+int expand_buffer(conn_t *conn) {
+    size_t new_capacity;
+    char *tmp;
+
+    if (conn->w_capacity >= conn->w_max_size) return -1;
+
+    new_capacity = conn->w_capacity * 2;
+    if (new_capacity > conn->w_max_size)
+        new_capacity = conn->w_max_size;
+
+    tmp = realloc(conn->buf, new_capacity);
+    if (!tmp) return -1;
+
+    conn->buf = tmp;
+    conn->w_capacity = new_capacity;
+
+    return 0;
 }
 
 int flush_write_buffer(int sockfd) {
+    char *tmp;
     ssize_t n;
-    size_t  remain;
+    size_t remain;
     conn_t *conn = &conns[sockfd];
 
-    remain = conn->w_used - conn->w_sent;
-
-    if (remain == 0) return 0;
+    if ( (remain = conn->w_used - conn->w_sent) == 0 ) return 0;
 
     if ( (n = write(sockfd, conn->buf + conn->w_sent, remain)) < 0 ) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -33,6 +58,14 @@ int flush_write_buffer(int sockfd) {
         conn->w_used = 0;
         conn->w_sent = 0;
         conn->w_pending = 0;
+
+        if (conn->w_capacity > BUF_8KB) {
+            tmp = realloc(conn->buf, BUF_8KB);
+            if (tmp) {
+                conn->buf = tmp;
+                conn->w_capacity = BUF_8KB;
+            }
+        }
 
         return 0;
     }
@@ -55,12 +88,22 @@ void buffered_writev(int sockfd, struct iovec *iov, int iovcnt) {
         if ( (n = writev(sockfd, iov, iovcnt)) < 0 ) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 for (i = 0; i < iovcnt; i++) {
+                    while (iov[i].iov_len > (conn->w_capacity - conn->w_used)) {
+                        if (expand_buffer(conn) < 0) {
+                            conn->w_pending = -1;
+                            return;
+                        }
+                    }
+
                     memcpy(conn->buf + conn->w_used, iov[i].iov_base, iov[i].iov_len);
                     conn->w_used += iov[i].iov_len;
                 }
+
                 conn->w_pending = 1;
                 return;
             }
+
+            conn->w_pending = -1;
             return;
         }
 
@@ -76,21 +119,36 @@ void buffered_writev(int sockfd, struct iovec *iov, int iovcnt) {
             }
 
             copy_len = iov[i].iov_len - offset;
+
+            while (copy_len > (conn->w_capacity - conn->w_used)) {
+                if (expand_buffer(conn) < 0) {
+                    conn->w_pending = -1;
+                    return;
+                }
+            }
+                
             memcpy(conn->buf + conn->w_used, (char *)iov[i].iov_base + offset, copy_len);
             conn->w_used += copy_len;
+            offset = 0;
+       
         }
 
         conn->w_sent = 0;
         conn->w_pending = 1;
-        
+
         return;
     }
 
     for (i = 0; i < iovcnt; i++) {
-        if (conn->w_used + iov[i].iov_len <= sizeof(conn->buf)) {
-            memcpy(conn->buf + conn->w_used, iov[i].iov_base, iov[i].iov_len);
-            conn->w_used += iov[i].iov_len;
+        while (conn->w_used + iov[i].iov_len > conn->w_capacity) {
+            if (expand_buffer(conn) < 0) {
+                conn->w_pending = -1;
+                return;
+            }
         }
+        
+        memcpy(conn->buf + conn->w_used, iov[i].iov_base, iov[i].iov_len);
+        conn->w_used += iov[i].iov_len;
     }
 
     conn->w_pending = 1;

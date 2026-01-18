@@ -3,11 +3,16 @@
 
 #include "include/unp.h"
 
+#define BUF_8KB 8192
+#define BUF_MAX 65536
+
 typedef struct {
     int fd;
-    char buf[MAXLINE];
+    char *buf;
     size_t w_used;
     size_t w_sent;
+    size_t w_capacity;
+    size_t w_max_size;
     int w_pending;
 } conn_t;
 
@@ -63,6 +68,12 @@ extern conn_t conns[MAXFD];
     Initialize the connection structure for the given file descriptor.
 */
 void conn_init(int fd);
+
+/*
+    Expand the write buffer for the given connection.
+    Returns 0 on success, -1 on failure.
+*/
+int expand_buffer(conn_t *conn);
 
 /*
     Flush the write buffer for the given socket file descriptor.
