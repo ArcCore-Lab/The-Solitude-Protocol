@@ -1,7 +1,9 @@
 #include "include/unp.h"
+#include "tspmalloc.h"
 #include "tsp.h"
 
 conn_t conns[MAXFD];
+extern MemoryPool pool;
 
 void conn_init(int fd) {
     conns[fd].fd = fd;
@@ -10,7 +12,7 @@ void conn_init(int fd) {
     conns[fd].w_pending = 0;
     conns[fd].w_capacity = BUF_8KB;
     conns[fd].w_max_size = BUF_MAX;
-    conns[fd].buf = malloc(BUF_8KB);
+    conns[fd].buf = tspmalloc(&pool, BUF_8KB);
     if (!conns[fd].buf){
         conns[fd].w_pending = -1;
         return;
@@ -27,8 +29,11 @@ int expand_buffer(conn_t *conn) {
     if (new_capacity > conn->w_max_size)
         new_capacity = conn->w_max_size;
 
-    tmp = realloc(conn->buf, new_capacity);
+    tmp = tspmalloc(&pool, new_capacity);
     if (!tmp) return -1;
+
+    memcpy(tmp, conn->buf, conn->w_used);
+    tspfree(&pool, conn->buf);
 
     conn->buf = tmp;
     conn->w_capacity = new_capacity;
@@ -60,8 +65,10 @@ int flush_write_buffer(int sockfd) {
         conn->w_pending = 0;
 
         if (conn->w_capacity > BUF_8KB) {
-            tmp = realloc(conn->buf, BUF_8KB);
+            tmp = tspmalloc(&pool, BUF_8KB);
             if (tmp) {
+                memcpy(tmp, conn->buf, conn->w_used);
+                tspfree(&pool, conn->buf);
                 conn->buf = tmp;
                 conn->w_capacity = BUF_8KB;
             }

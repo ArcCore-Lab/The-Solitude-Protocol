@@ -1,5 +1,6 @@
 #include "include/unp.h"
 #include "lib/tsp.h"
+#include "lib/tspmalloc.h"
 
 int main(int argc, char **argv) {
     int listenfd, connfd, sockfd;
@@ -9,6 +10,8 @@ int main(int argc, char **argv) {
     char buf[MAXLINE];
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
+
+    tsp_init(&pool);
 
     siginal(SIGPIPE, SIG_IGN);
 
@@ -50,7 +53,7 @@ int main(int argc, char **argv) {
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
             } else if (events[i].events & EPOLLIN) {
                 if ( (n = read(sockfd, buf, MAXLINE)) <= 0 ) {
-                    free(conns[sockfd].buf);
+                    tspfree(&pool, conns[sockfd].buf);
                     epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
                     close(sockfd);
                 } else {
@@ -64,7 +67,7 @@ int main(int argc, char **argv) {
                 }
             } else if (events[i].events & EPOLLOUT) {
                 if (conns[sockfd].w_pending == -1) {
-                    free(conns[sockfd].buf);
+                    tspfree(&pool, conns[sockfd].buf);
                     epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
                     close(sockfd);
                 } else if (flush_write_buffer(sockfd) == 0) {
@@ -75,7 +78,8 @@ int main(int argc, char **argv) {
             }
         }
     }
-    
+
+    tsp_destroy(&pool);
     close(epfd);
     return 0;
 }

@@ -136,6 +136,21 @@ Today's summary:
 
 ---
 
+## 🌌 Day 08: Zero-copy
+
+**Date:** 2025-01-19
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+A normal day... Although zero-copy is today's theme, I still reviewed the design of tcmalloc and made some optimizations. Wow, it's really amazing.
+
+Today's summary: not so much special things...
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

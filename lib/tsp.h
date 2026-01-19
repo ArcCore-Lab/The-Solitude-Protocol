@@ -87,4 +87,7 @@ int flush_write_buffer(int sockfd);
 */
 void buffered_writev(int sockfd, struct iovec *iov, int iovcnt);
 
+extern MemoryPool pool;
+
+
 #endif /* _TSP_H */
