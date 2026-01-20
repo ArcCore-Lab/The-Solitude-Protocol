@@ -378,7 +378,7 @@ void response(int sockfd, char *buf, ssize_t n) {
     free(body);
 }
 
-// src/Day06/tcpserv_writev.c
+// src/Day07/tcpserv_malloc.c
 int main(int argc, char **argv) {
     int listenfd, connfd, sockfd;
     int i, epfd, nready;

@@ -2,7 +2,6 @@
 #include "tspmalloc.h"
 #include "tsp.h"
 
-conn_t conns[MAXFD];
 extern MemoryPool pool;
 
 void conn_init(int fd) {

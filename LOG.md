@@ -109,7 +109,7 @@ OK, today's summary:
 
 Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
 
-"In summary, we should always try to use the fewest number of system calls necessary to get the job done." -- This sentence from *"Unix Network Programming"* really enlightened me today. It made me realize the importance of efficiency in system programming and I will keep it in mind moving forward.
+*"In summary, we should always try to use the fewest number of system calls necessary to get the job done."* -- This sentence from *"Unix Network Programming"* really enlightened me today. It made me realize the importance of efficiency in system programming and I will keep it in mind moving forward.
 
 Author day full of insights:
 1. Buffering is crucial for performance. By minimizing the number of write system calls, we can significantly improve throughput.📈
@@ -148,6 +148,23 @@ Fix some bugs left from yesterday, and add some text comments to the code for be
 A normal day... Although zero-copy is today's theme, I still reviewed the design of tcmalloc and made some optimizations. Wow, it's really amazing.
 
 Today's summary: not so much special things...
+
+---
+
+## 🌠 Day 09: Load Testing & Optimization
+
+**Date:** 2025-01-20
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Oh, today is snowing outside. It's rare in this city. I like it. It makes me feel peaceful. Actually, snowing days are always good for coding. A normal day as before...
+
+Today's summary:
+1. The scale of code is determined by states and functions, while the size of the code is determined by error handling. This is a profound insight that I learned today. I️t will affect me in the future. Just as the saying goes, "It takes 10% of the effect to write the a program that runs, while 90% to make it robust."🛠️
+2. I don't know how the veteran programmers think so thoroughly about error handling and designing the states and functions. Maybe it's accumulated from years of experience. I have to learn more and practice more from them. They are really masters.👑
 
 ---
 
