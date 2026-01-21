@@ -168,6 +168,25 @@ Today's summary:
 
 ---
 
+## 🌠 Day 10: Duplex communication
+
+**Date:** 2025-01-21
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+*How can a wandering sun have any cares?*
+
+A normal day as before...
+
+Today's summary:
+1. Duplex communication is essential for modern web applications. It allows for real-time data exchange between clients and servers, enabling features like live updates and interactive experiences.🌐
+2. Implementing duplex communication requires careful consideration of protocols, data formats, and performance optimizations. It's a complex but rewarding endeavor.⚙️
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

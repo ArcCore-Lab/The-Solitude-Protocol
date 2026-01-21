@@ -4,15 +4,18 @@
 #include "lib/tspmalloc.h"
 
 int main(int argc, char **argv) {
+    int listenfd, connfd, sockfd;
+    int i, epfd, nready, ret;
     ssize_t n;
     socklen_t clilen;
     char buf[MAXLINE];
-    int i, epfd, nready;
-    int listenfd, connfd, sockfd;
+    request_t *req;
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
 
     signal(SIGPIPE, SIG_IGN);
+
+    tsp_init(&pool);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -21,7 +24,7 @@ int main(int argc, char **argv) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(SERV_PORT);
 
-    bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+    bind(listenfd, (SA *)&servaddr, sizeof(servaddr));
 
     listen(listenfd, LISTENQ);
     if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0)
@@ -40,7 +43,7 @@ int main(int argc, char **argv) {
 
             if (sockfd == listenfd) {
                 clilen = sizeof(cliaddr);
-                connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
+                connfd = accept(listenfd, (SA *)&cliaddr, &clilen);
 
                 if (fcntl(connfd, F_SETFL, O_NONBLOCK) < 0)
                     err_sys("fcntl O_NONBLOCK error");
@@ -51,21 +54,37 @@ int main(int argc, char **argv) {
                 ev.data.fd = connfd;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
             } else if (events[i].events & EPOLLIN) {
-                if ( (n = read(sockfd, buf, MAXLINE)) <= 0) {
+                if ( (n = read(sockfd, buf, MAXLINE)) <= 0 ) {
+                    while( (req = dequeue_req(sockfd)) != NULL ) {
+                        free_req(req);
+                    }
+
                     epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
                     close(sockfd);
                 } else {
                     resp_sendfile(sockfd, buf);
 
-                    if (conq[sockfd].wpending){
+                    if (conq[sockfd].wpending) {
                         ev.events = EPOLLIN | EPOLLOUT;
                         ev.data.fd = sockfd;
                         epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
                     }
                 }
             } else if (events[i].events & EPOLLOUT) {
-                if (writefbuf(sockfd) == 0) {
-                    ev.events = EPOLLIN;
+                ret = writefbuf(sockfd);
+
+                if (ret == 0) {
+                    if (conq[sockfd].req_head == NULL) {
+                        ev.events = EPOLLIN;
+                        ev.data.fd = sockfd;
+                        epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
+                    } else {
+                        ev.events = EPOLLIN | EPOLLOUT;
+                        ev.data.fd = sockfd;
+                        epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
+                    }
+                } else if (ret < 0) {
+                    ev.events = EPOLLIN | EPOLLOUT;
                     ev.data.fd = sockfd;
                     epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
                 }
@@ -73,6 +92,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    tsp_destroy(&pool);
     close(epfd);
     return 0;
 }
