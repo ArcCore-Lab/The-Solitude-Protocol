@@ -187,6 +187,21 @@ Today's summary:
 
 ---
 
+## 🌠 Day 11: Directory listing
+
+**Date:** 2025-01-22
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+I don't know why I feel so tired today. Maybe because I worked too hard these days. So I decide to take it easy today. Maybe it's a little obeying to the plan, but I think it's necessary. Because only a clear mind can do better work.
+
+So today, let's just sleep early.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
