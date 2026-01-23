@@ -1,4 +1,4 @@
-#include "unp_day11.h"
+#include "unp_day12.h"
 
 // lib/error.c
 int deamon_proc;
@@ -375,6 +375,109 @@ int flush_write_buffer(int sockfd)
     return -1;
 }
 
+// lib/cgi.c
+int is_cgi_script(const char *filepath) {
+    const char *cgi_extensions[] = {".php", ".py", ".sh", ".pl", NULL};
+
+    for (int i = 0; cgi_extensions[i] != NULL; i++) {
+        if (strstr(filepath, cgi_extensions[i])) return 1;
+    }
+
+    return 0;
+}
+
+int execute_cgi(int sockfd, const char *filepath, const char *method, const char *query_string, char **output, size_t *output_len) {
+    int pipe_fd[2];
+    pid_t pid;
+    ssize_t n;
+    char buf[MAXLINE];
+
+    if (pipe(pipe_fd) == -1) {
+        perror("pipe");
+        return -1;
+    }
+
+    pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
+        return - 1;
+    }
+
+    if (pid == 0) {
+        close(pipe_fd[0]);
+
+        if (dup2(pipe_fd[1], STDOUT_FILENO) == -1) {
+            perror("dup2");
+            exit(1);
+        }
+
+        close(pipe_fd[1]);
+
+        setenv("REQUEST_METHOD", method, 1);
+        if (query_string && strlen(query_string) > 0)
+        {
+            setenv("QUERY_STRING", query_string, 1);
+        }
+        setenv("SCRIPT_FILENAME", filepath, 1);
+        setenv("SERVER_SOFTWARE", "ArcCore/1.0", 1);
+
+        const char *interpreter = NULL;
+        if (strstr(filepath, ".php"))
+        {
+            interpreter = "/usr/bin/php";
+        }
+        else if (strstr(filepath, ".py"))
+        {
+            interpreter = "/usr/bin/python3";
+        }
+        else if (strstr(filepath, ".sh"))
+        {
+            interpreter = "/bin/sh";
+        }
+
+        char *argv[3];
+        if (interpreter)
+        {
+            argv[0] = (char *)interpreter;
+            argv[1] = (char *)filepath;
+            argv[2] = NULL;
+            execve(interpreter, argv, environ);
+        }
+        else
+        {
+            char *argv[] = {(char *)filepath, NULL};
+            execve(filepath, argv, environ);
+        }
+
+        perror("execve");
+        exit(1);
+    } else {
+        close(pipe_fd[1]);
+
+        *output = (char *)malloc(65536);
+        if (!output) {
+            close(pipe_fd[0]);
+            waitpid(pid, NULL, 0);
+            return -1;
+        }
+
+        *output_len = 0;
+        while( (n = read(pipe_fd[0], buf, sizeof(buf))) > 0 ) {
+            if (*output_len + n > 65536) break;
+
+            memcpy(*output + *output_len, buf, n);
+            *output_len += n;
+        }
+
+        close(pipe_fd[0]);
+        waitpid(pid, NULL, 0);
+
+        return 0;
+    }
+}
+
 // lib/resp_sendfile.c
 static int parser_reqline(const char *buf, size_t buflen, char *method, char *path, char *version) {
     const char *end = strstr(buf, "\r\n");
@@ -547,6 +650,7 @@ void resp_sendfile(int sockfd, char *buf) {
     conn_q *conn = &conns[sockfd];
     request_t *req;
     char method[32], path[256], version[32];
+    char query_string[512] = {0};
     int parser_len;
 
     parser_len = parser_reqline(buf, MAXLINE, method, path, version);
@@ -566,6 +670,12 @@ void resp_sendfile(int sockfd, char *buf) {
 
     int status_code;
     char *filename = (*path == '/') ? path + 1 : path;
+
+    char *qmark = strchr(filename, '?');
+    if (qmark) {
+        snprintf(query_string, sizeof(query_string), "%s", qmark + 1);
+        *qmark = '\0';
+    }
 
     size_t flen = strlen(filename);
     if (flen > 0 && filename[flen - 1] == '/') {
@@ -591,6 +701,36 @@ void resp_sendfile(int sockfd, char *buf) {
         enqueue_req(sockfd, req);
         conn->wpending = 1;
         return;
+    }
+
+    if (is_cgi_script(filepath) && status_code == 200) {
+        char *cgi_out = NULL;
+        size_t cgi_out_len = 0;
+
+        if (execute_cgi(sockfd, filepath, method, query_string, &cgi_out, &cgi_out_len) == 0) {
+            snprintf(req->hbuf, sizeof(req->hbuf),
+                     "HTTP/1.1 200 OK\r\n"
+                     "Content-Type: text/html; charset=utf-8\r\n"
+                     "Content-Length: %zu\r\n"
+                     "Connection: keep-alive\r\n"
+                     "Keep-Alive: timeout=8\r\n\r\n",
+                     cgi_out_len);
+
+            req->body = cgi_out;
+            req->bsize = cgi_out_len;
+            req->bsent = 0;
+            req->stats = 0;
+
+            int cork = 1;
+            setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
+
+            enqueue_req(sockfd, req);
+            conn->wpending = 1;
+            free(filepath);
+            return;
+        } else {
+            free(cgi_out);
+        }
     }
 
     int ffd = open(filepath, O_RDONLY);
@@ -636,7 +776,7 @@ void resp_sendfile(int sockfd, char *buf) {
     free(filepath);
 }
 
-// src/Day11/directory.c
+// src/Day12/cgiserv.c
 int main(int argc, char **argv)
 {
     int listenfd, connfd, sockfd;

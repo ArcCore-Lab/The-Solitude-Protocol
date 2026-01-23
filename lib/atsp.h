@@ -13,6 +13,10 @@ typedef struct request {
     off_t foffset;
     size_t fsize;
 
+    char *body;
+    size_t bsize;
+    size_t bsent;
+
     // 0 = header, 1 = file, 2 = finish
     int stats;
     struct request *next;
@@ -48,5 +52,29 @@ int writefbuf(int sockfd);
 int parser_reqline(const char *buf, size_t buflen, char *method, char *path, char *version);
 
 void resp_sendfile(int sockfd, char *buf);
+
+/*
+    Check if the given file path corresponds to a CGI script.
+    Parameters:
+        filepath: The path to the file.
+    Returns:
+        1 if it is a CGI script, 0 otherwise.
+*/
+int is_cgi_script(const char *filepath);
+
+/*
+    Execute a CGI script and capture its output.
+    Parameters:
+        sockfd: The socket file descriptor.
+        filepath: The path to the CGI script.
+        method: The HTTP method (e.g., "GET", "POST").
+        query_string: The query string from the URL.
+        output: Pointer to store the allocated output buffer.
+        output_len: Pointer to store the length of the output.
+    Returns:
+        0 on success, -1 on failure.
+*/
+int execute_cgi(int sockfd, const char *filepath, const char *method,
+                const char *query_string, char **output, size_t *output_len);
 
 #endif /*ZERO_COPY_H*/

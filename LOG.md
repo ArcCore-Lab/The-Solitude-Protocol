@@ -202,6 +202,23 @@ So today, let's just sleep early.
 
 ---
 
+## 🌌 Day 12: Support CGI
+
+**Date:** 2025-01-23
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Fortunately, everything goes well today. I'm powerful enough to deal with CGI and, of course, directory listing -- left from yesterday. OK, the real I want to say is a day's rest is important. It can help me recharge energy and face the next challenges with a clear mind. (Luckily, yesterday's task is not so difficult.) I have finish them both today, although it takes me a bit longer than expected.
+
+OK, today's summary:
+1. Sometimes, free the memory is not for reusing the memory we don't need anymore, but for preventing memory or variable from being used again mistakenly. This is an important point I learned today.🧠
+2. CGI is really powerful. It allows web servers to execute external programs and generate dynamic content. This opens up a world of possibilities for web applications.🌍
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

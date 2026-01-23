@@ -10,6 +10,11 @@ request_t *create_req(void) {
     memset(req, 0, sizeof(request_t));
 
     req->ffd = -1;
+
+    req->body = NULL;
+    req->bsize = 0;
+    req->bsent = 0;
+
     req->stats = 0;
     req->next = NULL;
 
@@ -58,6 +63,8 @@ request_t *dequeue_req(int sockfd) {
 
 void free_req(request_t *req) {
     if (req->ffd != -1) close(req->ffd);
+
+    if (req->body != NULL) free(req->body);
 
     tspfree(&pool, req);
 }
@@ -115,30 +122,52 @@ int writefbuf(int sockfd) {
 
         return -1;
     } else if (req->stats == 1) {
-        if (req->ffd == -1 || req->fsize == 0) {
+        if (req->body != NULL) {
+            remain = req->bsize - req->bsent;
+            if (remain == 0) {
+                req->stats = 2;
+                return writefbuf(sockfd);
+            }
+
+            n = write(sockfd, req->body + req->bsent, remain);
+            if (n < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
+
+                return -1;
+            }
+
+            req->bsent += n;
+
+            if (req->bsent >= req->bsize) {
+                req->stats = 2;
+                return writefbuf(sockfd);
+            }
+
+            return -1;
+        } else if (req->ffd != -1 && req->fsize > 0) {
+            remain = req->fsize - req->foffset;
+            if (remain == 0) {
+                req->stats = 2;
+                return writefbuf(sockfd);
+            }
+
+            n = sendfile(sockfd, req->ffd, &req->foffset, remain);
+            if (n < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
+
+                return -1;
+            }
+
+            if (req->foffset >= req->fsize) {
+                req->stats = 2;
+                return writefbuf(sockfd);
+            }
+
+            return -1;
+        } else {
             req->stats = 2;
             return writefbuf(sockfd);
         }
-
-        remain = req->fsize - req->foffset;
-        if (remain == 0) {
-            req->stats = 2;
-            return writefbuf(sockfd);
-        }
-
-        n = sendfile(sockfd, req->ffd, &req->foffset, remain);
-        if (n < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
-
-            return - 1;
-        }
-
-        if (req->foffset >= req->fsize) {
-            req->stats = 2;
-            return writefbuf(sockfd);
-        }
-
-        return -1;
     } else if (req->stats == 2) {
         setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
 

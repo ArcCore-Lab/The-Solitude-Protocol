@@ -19,6 +19,11 @@ static char *search_in_dir(const char *dir, const char *filename) {
 
         if (stat(path, &st) != 0) continue;
 
+        if (strcmp(ent->d_name, filename) == 0) {
+            result = strdup(path);
+            break;
+        }
+
         if (S_ISDIR(st.st_mode)) {
             result = search_in_dir(path, filename);
             if (result) break;
@@ -35,15 +40,40 @@ static char *search_in_dir(const char *dir, const char *filename) {
 }
 
 char *ffind(const char *filename, int *status_code) {
-    char filepath;
+    char filepath[MAXLINE];
+    char realpath_buf[MAXLINE];
+    char static_realpath[MAXLINE];
     struct stat st;
+
     char *path404 = "../static/404.html";
 
-    filepath = search_in_dir("../static", filename);
-    if (filepath) {
-        *status_code = 200;
-        return filepath;
+    snprintf(filepath, sizeof(filepath), "../static/%s", filename);
+
+    if (realpath(filepath, realpath_buf) == NULL) {
+        *status_code = 404;
+        return strdup(path404);
     }
+
+    if (realpath("../static", static_realpath) == NULL) {
+        *status_code = 500;
+        return strdup(path404);
+    }
+
+    if (strncmp(realpath_buf, static_realpath, strlen(static_realpath)) != 0) {
+        *status_code = 404;
+        return strdup(path404);
+    }
+
+    if (stat(realpath_buf, &st) == 0) {
+        *status_code = 200;
+        return strdup(realpath_buf);
+    }
+    
+    // filepath = search_in_dir("../static", filename);
+    // if (filepath) {
+    //     *status_code = 200;
+    //     return filepath;
+    // }
 
     if (stat(path404, &st) == 0) {
         *status_code = 404;
