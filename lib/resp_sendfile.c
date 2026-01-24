@@ -38,6 +38,97 @@ static void html_escape(const char *src, char *dst, size_t dstlen) {
     dst[j] = '\0';
 }
 
+int find_head_end(const char *buf, size_t len) {
+    for (size_t i = 0; i < len - 3; i++) {
+        if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n') {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static char *urldecode(const char *encoded) {
+    if (!encoded) return NULL;
+
+    size_t len = strlen(encoded);
+    char *decoded = (char *)tspmalloc(&pool, len + 1);
+    if (!decoded) return NULL;
+
+    size_t j = 0;
+    for(size_t i = 0; i < len && encoded[i]; i++) {
+        if (encoded[i]== '%' && i + 2 < len) {
+            int hex_val;
+            if (sscanf(encoded[i] + i + 1, "%2x", &hex_val) == 1) {
+                decoded[j++] = (char *)hex_val;
+                i += 2;
+            } else {
+                decoded[j++] = encoded[i];
+            }
+        } else if (encoded[i] == '+') {
+            decoded[j++] = ' ';
+        } else {
+            decoded[j++] = encoded[i];
+        }
+    }
+    decoded[j] = '\0';
+
+    return decoded;
+}
+
+static form_item_t *parse_form_data(const char *data, size_t len) {
+    if (!data || len == 0) return NULL;
+
+    form_item_t *head = NULL;
+    form_item_t *tail = NULL;
+
+    char *buf = (char *)tspmalloc(&pool, len + 1);
+    if (!buf) return NULL;
+    memcpy(buf, data, len);
+    buf[len] = '\0';
+
+    char *saveptr = NULL;
+    char *pair = strtok_r(buf, "&", &saveptr);
+
+    while (pair) {
+        char *eq = strchr(pair, '=');
+        if (eq) {
+            *eq = '\0';
+
+            char *key = urldecode(pair);
+            char *value = urldecode(eq + 1);
+
+            if (key && value) {
+                form_item_t *item = (form_item_t *)tspmalloc(&pool, sizeof(form_item_t));
+                if (item) {
+                    item->key = key;
+                    item->value = value;
+                    item->next = NULL;
+
+                    if (!head) {
+                        head = item;
+                        tail = item;
+                    } else {
+                        tail->next = item;
+                        tail = item;
+                    }
+                } else {
+                    tspfree(&pool, key);
+                    tspfree(&pool, value);
+                }
+            } else {
+                if (key) tspfree(&pool, key);
+                if (value) tspfree(&pool, value);
+            }
+        }
+        pair = strtok_r(NULL, "&", &saveptr);
+    }
+
+    tspfree(&pool, buf);
+
+    return head;
+}
+
 void resp_listdir(int sockfd, char *filename) {
     DIR *dp;
     size_t dlen;
@@ -193,6 +284,53 @@ void resp_sendfile(int sockfd, char *buf) {
 
         snprintf(req->hbuf, sizeof(req->hbuf), "%s", msg400);
         enqueue_req(sockfd, req);
+        conn->wpending = 1;
+        return;
+    }
+
+    if (strcmp(method, "POST") == 0 && req->content_length > 0) {
+        size_t body_start = req->header_end_pos + 4;
+        const char *body_data = buf + body_start;
+        size_t body_len = req->content_length;
+
+        char *content_type = strstr(buf, "Content-Type:");
+        if (content_type && strstr(content_type, "application/x-www-form-urlencoded")) {
+            req->form_data = parse_form_data(body_data, body_len);
+        }
+    }
+
+    if (strcmp(method, "POST") == 0 && req->form_data) {
+        char html_body[2048] = {0};
+        int offset = 0;
+
+        offset += snprintf(html_body + offset, sizeof(html_body) - offset,
+                           "<html><body><h1>Received</h1><ul>");
+
+        form_item_t *cur = req->form_data;
+        while (cur && offset < sizeof(html_body) - 256) {
+            offset += snprintf(html_body + offset, sizeof(html_body) - offset,
+                               "<li><strong>%s</strong>: %s</li>", cur->key, cur->value);
+            cur = cur->next;
+        }
+
+        offset += snprintf(html_body + offset, sizeof(html_body) - offset,
+                           "</ul></body></html>");
+
+        snprintf(req->hbuf, sizeof(req->hbuf),
+                 "HTTP/1.1 200 OK\r\n"
+                 "Content-Type: text/html; charset=utf-8\r\n"
+                 "Content-Length: %d\r\n"
+                 "Connection: close\r\n\r\n",
+                 offset);
+
+        req->body = (char *)tspmalloc(&pool, offset + 1);
+        if (req->body) {
+            strcpy(req->body, html_body);
+            req->bsize = offset;
+            req->bsent = 0;
+            req->stats = 0;
+        }
+
         conn->wpending = 1;
         return;
     }

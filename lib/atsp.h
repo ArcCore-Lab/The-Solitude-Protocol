@@ -5,6 +5,12 @@
 
 char *ffind(const char *filename, int *status_code);
 
+typedef struct form_item {
+    char *key;
+    char *value;
+    struct form_item *next;
+} form_item_t;
+
 typedef struct request {
     char hbuf[512];
     size_t hsent;
@@ -19,6 +25,19 @@ typedef struct request {
 
     // 0 = header, 1 = file, 2 = finish
     int stats;
+
+    char *reqbuf;
+    size_t reqlen;
+    size_t reqcap;
+
+    // 0 = unparse, 1 = parsed line, 
+    // 2 = parsed header, 3 = finished
+    int req_parse_state;
+    int content_length;
+    size_t header_end_pos;
+
+    form_item_t *form_data;
+
     struct request *next;
 } request_t;
 
@@ -50,6 +69,16 @@ void init_conn(int fd);
 int writefbuf(int sockfd);
 
 int parser_reqline(const char *buf, size_t buflen, char *method, char *path, char *version);
+
+/*
+    Find the end of HTTP headers in the given buffer.
+    Parameters:
+        buf: The buffer containing HTTP request data.
+        len: The length of the buffer.
+    Returns:
+        The index of the end of headers, or -1 if not found.
+*/
+int find_head_end(const char *buf, size_t len);
 
 void resp_sendfile(int sockfd, char *buf);
 

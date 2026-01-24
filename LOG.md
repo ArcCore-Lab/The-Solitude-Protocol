@@ -214,8 +214,24 @@ Fix some bugs left from yesterday, and add some text comments to the code for be
 Fortunately, everything goes well today. I'm powerful enough to deal with CGI and, of course, directory listing -- left from yesterday. OK, the real I want to say is a day's rest is important. It can help me recharge energy and face the next challenges with a clear mind. (Luckily, yesterday's task is not so difficult.) I have finish them both today, although it takes me a bit longer than expected.
 
 OK, today's summary:
-1. Sometimes, free the memory is not for reusing the memory we don't need anymore, but for preventing memory or variable from being used again mistakenly. This is an important point I learned today.🧠
+1. Sometimes, free the memory is not for reusing the memory we don't need anymore, but for preventing memory or variable from being used again mistakenly. This is an important point I learned today.🧠(Maybe I have written it before, but a good coding principle is always necessary.)
 2. CGI is really powerful. It allows web servers to execute external programs and generate dynamic content. This opens up a world of possibilities for web applications.🌍
+
+---
+
+## 💤 Day 13: POST
+
+**Date:** 2025-01-24
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is a bit tough. Parsing POST form data is really not easy. It took me a long time to understand the format and implement the parsing logic. But finally, I made it. Phew!
+(I never thought that parsing form data could be so complicated. There are so many edge cases to consider, like different content types and encoding methods. It was a real challenge, but I learned a lot in the process.)
+
+Today's summary: A normal day as before...
 
 ---
 

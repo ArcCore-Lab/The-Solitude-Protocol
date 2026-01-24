@@ -10,13 +10,23 @@ request_t *create_req(void) {
     memset(req, 0, sizeof(request_t));
 
     req->ffd = -1;
-
     req->body = NULL;
     req->bsize = 0;
     req->bsent = 0;
-
     req->stats = 0;
     req->next = NULL;
+
+    req->reqcap = 8192;
+    req->reqbuf = (char *)tspmalloc(&pool, req->reqcap);
+    if (!req->reqbuf) {
+        tspfree(&pool, req);
+        return NULL;
+    }
+
+    req->reqlen = 0;
+    req->req_parse_state = 0;
+    req->content_length = 0;
+    req->header_end_pos = 0;
 
     return req;
 }
@@ -64,7 +74,21 @@ request_t *dequeue_req(int sockfd) {
 void free_req(request_t *req) {
     if (req->ffd != -1) close(req->ffd);
 
-    if (req->body != NULL) free(req->body);
+    if (req->body != NULL) tspfree(&pool, req->body);
+
+    if (req->reqbuf != NULL) tspfree(&pool, req->reqbuf);
+
+    form_item_t *cur = req->form_data;
+    while (cur) {
+        form_item_t *next = cur->next;
+
+        if (cur->key) free(cur->key);
+        if (cur->next) free(cur->value);
+
+        free(cur);
+
+        cur = next;
+    }
 
     tspfree(&pool, req);
 }
