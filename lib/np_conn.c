@@ -28,6 +28,10 @@ request_t *create_req(void) {
     req->content_length = 0;
     req->header_end_pos = 0;
 
+    req->request_time = time(NULL);
+    strcpy(req->referer, "-");
+    strcpy(req->user_agent, "-");
+
     return req;
 }
 
@@ -194,6 +198,10 @@ int writefbuf(int sockfd) {
         }
     } else if (req->stats == 2) {
         setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
+
+        size_t total_bytes = strlen(req->hbuf) + req->fsize + req->bsize;
+        access_log(sockfd, req->method, req->path, req->version,
+                    req->status_code, total_bytes, req->referer, req->user_agent);
 
         free_req(req);
         dequeue_req(sockfd);

@@ -12,8 +12,11 @@ int main(int argc, char **argv) {
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
 
+    time_t last_log_flush = 0;
+
     signal(SIGPIPE, SIG_IGN);
 
+    log_init();
     tsp_init(&pool);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -36,6 +39,12 @@ int main(int argc, char **argv) {
 
     for (;;) {
         nready = epoll_wait(epfd, events, MAXFD, KEEPALIVE_TIMEOUT);
+
+        time_t now = time(NULL);
+        if (now - last_log_flush >= 1) {
+            log_flush_periodic();
+            last_log_flush = now;
+        }
 
         for (i = 0; i < nready; i++) {
             sockfd = events[i].data.fd;

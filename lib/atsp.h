@@ -3,7 +3,20 @@
 
 #include "include/unp.h"
 
+#define LOG_BUFFER_SIZE 65536
+#define LOG_MAX_SIZE (100 * 1024 * 1024)
+#define LOG_DIR "../log"
+
 char *ffind(const char *filename, int *status_code);
+
+typedef struct {
+    char buf[LOG_BUFFER_SIZE];
+    size_t offset;
+    pthread_mutex_t mutex;
+    int logfd;
+    off_t file_size;
+    char logfile[256];
+} log_buffer_t;
 
 typedef struct form_item {
     char *key;
@@ -37,6 +50,14 @@ typedef struct request {
     size_t header_end_pos;
 
     form_item_t *form_data;
+
+    char method[32];
+    char path[256];
+    char version[32];
+    char referer[512];
+    char user_agent[512];
+    int status_code;
+    time_t request_time;
 
     struct request *next;
 } request_t;
@@ -105,5 +126,30 @@ int is_cgi_script(const char *filepath);
 */
 int execute_cgi(int sockfd, const char *filepath, const char *method,
                 const char *query_string, char **output, size_t *output_len);
+
+/*
+    Log an access entry for an HTTP request.
+    Parameters:
+        sockfd: The socket file descriptor.
+        method: The HTTP method used.
+        path: The requested path.
+        version: The HTTP version.
+        status_code: The HTTP status code of the response.
+        bytes_sent: The number of bytes sent in the response.
+        referer: The HTTP referer header.
+        user_agent: The HTTP user-agent header.
+*/    
+void access_log(int sockfd, const char *method, const char *path, const char *version,
+                int status_code, size_t bytes_sent, const char *referer, const char *user_agent);
+
+/*
+    Initialize the logging system.
+*/
+void log_init(void);
+
+/*
+    Flush the log buffer to the log file periodically.
+*/
+void log_flush_periodic(void);
 
 #endif /*ZERO_COPY_H*/

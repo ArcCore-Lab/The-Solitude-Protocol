@@ -235,6 +235,22 @@ Today's summary: A normal day as before...
 
 ---
 
+## 💤 Day 14: Access Log
+
+**Date:** 2025-01-25
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is a breakthrough day. I finally implemented access logging for the server. It was a bit tricky to get the formatting right and ensure that all relevant information was captured, but I managed to do it.
+Actually, access log is more comples than I thought. There are many details to consider, like log rotation, log levels, and performance impact. But I think it's worth the effort, as it provides valuable insights into server usage and helps with debugging.
+
+Today's summary: A normal day as before...
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

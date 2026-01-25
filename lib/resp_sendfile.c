@@ -1,6 +1,7 @@
 #include "include/unp.h"
 #include "tsp.h"
 #include "atsp.h"
+#include "tspmalloc.h"
 
 static int parser_reqline(const char *buf, size_t buflen, char *method, char *path, char *version) {
     char line[256];
@@ -127,6 +128,18 @@ static form_item_t *parse_form_data(const char *data, size_t len) {
     tspfree(&pool, buf);
 
     return head;
+}
+
+static void extract_http_headers(const char *buf, request_t *req) {
+    const char *referer_ptr = strstr(buf, "Referer:");
+    if (referer_ptr) {
+        sscanf(referer_ptr, "Referer: %511[^\r\n]", req->referer);
+    }
+
+    const char *ua_ptr = strstr(buf, "User-Agent:");
+    if (ua_ptr) {
+        sscanf(ua_ptr, "User-Agent: %511[^\r\n]", req->user_agent);
+    }
 }
 
 void resp_listdir(int sockfd, char *filename) {
@@ -278,6 +291,12 @@ void resp_sendfile(int sockfd, char *buf) {
         "Connection: close\r\n\r\n";
 
     parser_len = parser_reqline(buf, MAXLINE, method, path, version);
+
+    strcpy(req->method, method);
+    strcpy(req->path, path);
+    strcpy(req->version, version);
+    extract_http_headers(buf, req);
+
     if (parser_len < 0) {
         req = create_req();
         if (!req) return;
@@ -417,6 +436,7 @@ void resp_sendfile(int sockfd, char *buf) {
              (status_code == 200) ? "OK" : "Not Found",
              st.st_size);
 
+    req->status_code = status_code;
     req->ffd = ffd;
     req->fsize = st.st_size;
     req->hsent = 0;

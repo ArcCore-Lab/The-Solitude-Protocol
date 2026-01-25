@@ -4,19 +4,16 @@
 
 #define _GNU_SOURCE
 
-#define SERV_PORT 8080
-#define LISTENQ 1024
-#define KEEPALIVE_TIMEOUT 8000
-
+#define SERV_PORT 9877
 #define MAXLINE 4096
 #define MAX_FILE_SIZE 4096
 
 #define MAXFD 65536
 #define INFTIM (-1)
+#define KEEPALIVE_TIMEOUT 8000
 
-#define SA struct sockaddr
-
-#define max(a, b) ((a) < (b) ? (a) : (b))
+#define BUF_8KB 8192
+#define BUF_MAX 16384
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -43,14 +40,23 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <syslog.h>
-#include <stddef.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <time.h>
 #include <pthread.h>
-#include <dirent.h>
+#include <time.h>
 #include <limits.h>
 #include <poll.h>
+
+#define SA struct sockaddr
+
+#define LISTENQ 1024
+
+#define max(a,b) ((a) < (b) ? (a) : (b))
+
+#define LOG_BUFFER_SIZE 65536
+#define LOG_MAX_SIZE (100 * 1024 * 1024)
+#define LOG_DIR "../log"
 
 #endif /*_UNP_H*/

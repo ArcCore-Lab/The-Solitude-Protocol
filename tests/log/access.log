@@ -1,0 +1,7 @@
+127.0.0.1 - - [25/Jan/2026:21:48:15 +0800] "GET /test.php?name=Stark&model=MarkXLII HTTP/1.1" 0 0 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
+127.0.0.1 - - [25/Jan/2026:21:48:15 +0800] "  " 0 1652 "-" "-"
+127.0.0.1 - - [25/Jan/2026:21:48:15 +0800] "GET /favicon.ico HTTP/1.1" 0 0 "http://127.0.0.1:9877/test.php?name=Stark&model=MarkXLII" "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
+127.0.0.1 - - [25/Jan/2026:21:48:50 +0800] "GET /test.php?name=Rode&model=MarkII HTTP/1.1" 0 0 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
+127.0.0.1 - - [25/Jan/2026:21:48:50 +0800] "  " 0 1646 "-" "-"
+127.0.0.1 - - [25/Jan/2026:21:49:00 +0800] "GET /index.html HTTP/1.1" 0 0 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
+127.0.0.1 - - [25/Jan/2026:21:49:00 +0800] "  " 200 1290 "-" "-"
