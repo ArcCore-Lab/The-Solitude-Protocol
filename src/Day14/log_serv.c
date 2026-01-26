@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
                 }
             }
             else if (events[i].events & EPOLLOUT) {
-                int ret = flush_write_buffer(sockfd);
+                int ret = writefbuf(sockfd);
 
                 if (ret == 0) {
                     if (conq[sockfd].req_head == NULL) {

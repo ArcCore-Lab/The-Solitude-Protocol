@@ -3,6 +3,8 @@
 
 #include "include/unp.h"
 
+#define NUM_WORKERS 4
+
 #define LOG_BUFFER_SIZE 65536
 #define LOG_MAX_SIZE (100 * 1024 * 1024)
 #define LOG_DIR "../log"
@@ -151,5 +153,7 @@ void log_init(void);
     Flush the log buffer to the log file periodically.
 */
 void log_flush_periodic(void);
+
+void master_process(void);
 
 #endif /*ZERO_COPY_H*/

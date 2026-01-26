@@ -251,6 +251,22 @@ Today's summary: A normal day as before...
 
 ---
 
+## 💤 Day 15: Prefork
+
+**Date:** 2025-01-26
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+A normal day as before...
+
+Today's summary:
+1. Time and space trade-offs are fundamental concepts in computer science. Understanding when to prioritize one over the other is crucial for efficient system design. I haven't thought about this deeply before.🕰️
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

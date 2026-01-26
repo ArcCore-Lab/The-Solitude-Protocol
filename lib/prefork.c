@@ -1,9 +1,9 @@
 #include "include/unp.h"
-#include "lib/tsp.h"
-#include "lib/atsp.h"
-#include "lib/tspmalloc.h"
+#include "tsp.h"
+#include "atsp.h"
+#include "tspmalloc.h"
 
-int main(int argc, char **argv) {
+void worker_loop(int worker_id) {
     int listenfd, connfd, sockfd;
     int i, epfd, nready;
     ssize_t n;
@@ -12,30 +12,50 @@ int main(int argc, char **argv) {
     struct epoll_event ev, events[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
 
-    signal(SIGPIPE, SIG_IGN);
-
-    tsp_init(&pool);
+    int reuse = 1;
+    time_t last_log_flush = 0;
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0) err_sys("socket error");
+
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
+        err_sys("setsockopt SO_REUSEPORT error");
+
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+        err_sys("setsockopt SO_REUSEADDR error");
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(SERV_PORT);
 
-    bind(listenfd, (SA *)&servaddr, sizeof(servaddr));
+    if (bind(listenfd, (SA *)&servaddr, sizeof(servaddr)) < 0) {
+        err_sys("bind error");
+    }
 
-    listen(listenfd, LISTENQ);
-    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0)
+    if (listen(listenfd, LISTENQ) < 0) {
+        err_sys("listen error");
+    }
+
+    if (fcntl(listenfd, F_SETFL, O_NONBLOCK) < 0) {
         err_sys("fcntl O_NONBLOCK error");
+    }
 
     epfd = epoll_create(MAXFD);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
 
+    fprintf(stderr, "Worker %d started (PID: %d)\n", worker_id, getpid());
+
     for (;;) {
         nready = epoll_wait(epfd, events, MAXFD, KEEPALIVE_TIMEOUT);
+
+        time_t now = time(NULL);
+        if (now - last_log_flush >= 1) {
+            log_flush_periodic();
+            last_log_flush = now;
+        }
 
         for (i = 0; i < nready; i++) {
             sockfd = events[i].data.fd;
@@ -52,10 +72,13 @@ int main(int argc, char **argv) {
                 ev.events = EPOLLIN;
                 ev.data.fd = connfd;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
+
+
             } else if (events[i].events & EPOLLIN) {
                 if ((n = read(sockfd, buf, MAXLINE)) <= 0) {
                     request_t *req;
-                    while ((req = dequeue_req(sockfd)) != NULL) {
+                    while ((req = dequeue_req(sockfd)) != NULL)
+                    {
                         free_req(req);
                     }
 
@@ -102,13 +125,11 @@ int main(int argc, char **argv) {
                         size_t body_start = header_end + 4;
                         size_t body_received = req->reqlen - body_start;
 
-                        if (req->content_length == 0 || body_received >= req->content_length)
-                        {
+                        if (req->content_length == 0 || body_received >= req->content_length) {
                             req->req_parse_state = 3;
                             resp_sendfile(sockfd, req->reqbuf);
 
-                            if (conq[sockfd].wpending)
-                            {
+                            if (conq[sockfd].wpending) {
                                 ev.events = EPOLLIN | EPOLLOUT;
                                 ev.data.fd = sockfd;
                                 epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
@@ -116,8 +137,7 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
-            }
-            else if (events[i].events & EPOLLOUT) {
+            } else if (events[i].events & EPOLLOUT) {
                 int ret = writefbuf(sockfd);
 
                 if (ret == 0) {
@@ -139,7 +159,43 @@ int main(int argc, char **argv) {
         }
     }
 
-    tsp_destroy(&pool);
     close(epfd);
-    return 0;
+    close(listenfd);
+}
+
+void master_process(void) {
+    int i;
+    pid_t pids[NUM_WORKERS];
+
+    for (i = 0; i < NUM_WORKERS; i++) {
+        pids[i] = fork();
+
+        if (pids[i] < 0) {
+            err_sys("fork error");
+        } else if (pids[i] == 0) {
+            worker_loop(i);
+            exit(0);
+        }
+    }
+
+    fprintf(stderr, "Master process (PID: %d) spawned %d workers\n", getpid(), NUM_WORKERS);
+
+    for (;;) {
+        pid_t dead_pid = wait(NULL);
+
+        for (i = 0; i < NUM_WORKERS; i++) {
+            if (pids[i] == dead_pid) {
+                fprintf(stderr, "Worker %d died, respawning...\n", i);
+                
+                pids[i] = fork();
+                if (pids[i] < 0) {
+                    err_sys("fork error in respawn");
+                } else if (pids[i] == 0) {
+                    worker_loop(i);
+                    exit(0);
+                }
+                break;
+            }
+        }
+    }
 }
