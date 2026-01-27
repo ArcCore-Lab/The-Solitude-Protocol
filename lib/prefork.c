@@ -3,17 +3,21 @@
 #include "atsp.h"
 #include "tspmalloc.h"
 
-void worker_loop(int worker_id) {
-    int listenfd, connfd, sockfd;
-    int i, epfd, nready;
-    ssize_t n;
-    socklen_t clilen;
-    char buf[MAXLINE];
-    struct epoll_event ev, events[MAXFD];
-    struct sockaddr_in servaddr, cliaddr;
+static void handle_reload(int sig) {
+    (void)sig;
+    g_should_reload = 1;
+}
+
+static void handle_shutdown(int sig) {
+    (void)sig;
+    g_should_shutdown = 1;
+}
+
+int master_create_listenfd(void) {
+    int listenfd;
+    struct sockaddr_in servaddr;
 
     int reuse = 1;
-    time_t last_log_flush = 0;
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd < 0) err_sys("socket error");
@@ -41,6 +45,22 @@ void worker_loop(int worker_id) {
         err_sys("fcntl O_NONBLOCK error");
     }
 
+    fprintf(stderr, "Master created listenfd: %d\n", listenfd);
+
+    return listenfd;
+}
+
+void worker_loop(int worker_id, int listenfd) {
+    int connfd, sockfd;
+    int i, epfd, nready;
+    ssize_t n;
+    socklen_t clilen;
+    char buf[MAXLINE];
+    struct epoll_event ev, events[MAXFD];
+    struct sockaddr_in cliaddr;
+
+    time_t last_log_flush = 0;
+
     epfd = epoll_create(MAXFD);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
@@ -63,6 +83,14 @@ void worker_loop(int worker_id) {
             if (sockfd == listenfd) {
                 clilen = sizeof(cliaddr);
                 connfd = accept(listenfd, (SA *)&cliaddr, &clilen);
+
+                if (connfd < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        continue;
+                    } else {
+                        err_sys("accept error");
+                    }
+                }
 
                 if (fcntl(connfd, F_SETFL, O_NONBLOCK) < 0)
                     err_sys("fcntl O_NONBLOCK error");
@@ -160,12 +188,17 @@ void worker_loop(int worker_id) {
     }
 
     close(epfd);
-    close(listenfd);
 }
 
-void master_process(void) {
-    int i;
+void master_process(int listenfd) {
+    int i, status;
     pid_t pids[NUM_WORKERS];
+
+    int worker_count = NUM_WORKERS;
+
+    signal(SIGHUP, handle_reload);
+    signal(SIGTERM, handle_shutdown);
+    signal(SIGCHLD, SIG_IGN);
 
     for (i = 0; i < NUM_WORKERS; i++) {
         pids[i] = fork();
@@ -173,7 +206,7 @@ void master_process(void) {
         if (pids[i] < 0) {
             err_sys("fork error");
         } else if (pids[i] == 0) {
-            worker_loop(i);
+            worker_loop(i, listenfd);
             exit(0);
         }
     }
@@ -181,20 +214,63 @@ void master_process(void) {
     fprintf(stderr, "Master process (PID: %d) spawned %d workers\n", getpid(), NUM_WORKERS);
 
     for (;;) {
-        pid_t dead_pid = wait(NULL);
+        if (g_should_reload) {
+            fprintf(stderr, "Master received SIGHUP, preparing reload...\n");
 
-        for (i = 0; i < NUM_WORKERS; i++) {
-            if (pids[i] == dead_pid) {
-                fprintf(stderr, "Worker %d died, respawning...\n", i);
-                
-                pids[i] = fork();
-                if (pids[i] < 0) {
-                    err_sys("fork error in respawn");
-                } else if (pids[i] == 0) {
-                    worker_loop(i);
-                    exit(0);
+            pid_t new_master = fork();
+            if (new_master < 0) {
+                err_sys("fork error in reload");
+            } else if (new_master == 0) {
+                char fd_str[16];
+                snprintf(fd_str, sizeof(fd_str), "%d", listenfd);
+
+                setenv(LISTEN_FD_ENV, fd_str, 1);
+
+                fprintf(stderr, "New master execing with LISTEN_FD=%s\n", fd_str);
+
+                extern char **environ;
+                execve(g_program_path, g_argv_copy, environ);
+
+                err_sys("execve error");
+            }
+
+            g_should_reload = 0;
+            g_should_shutdown = 1;
+        }
+
+        if (g_should_shutdown) {
+            fprintf(stderr, "Master shutting down gracefully...\n");
+
+            pid_t dead_pid;
+            int alive_count = worker_count;
+
+            while (alive_count > 0) {
+                dead_pid = wait(&status);
+                if (dead_pid > 0) {
+                    fprintf(stderr, "Worker %d exited\n", dead_pid);
+                    alive_count--;
                 }
-                break;
+            }
+
+            fprintf(stderr, "All workers shut down, master exiting\n");
+            break;
+        }
+
+        pid_t dead_pid = wait(&status);
+        if (dead_pid > 0) {
+            for (i = 0; i < worker_count; i++) {
+                if (pids[i] == dead_pid) {
+                    fprintf(stderr, "Worker %d died, respawning...\n", i);
+
+                    pids[i] = fork();
+                    if (pids[i] < 0) {
+                        err_sys("fork error in respawn");
+                    } else if (pids[i] == 0) {
+                        worker_loop(i, listenfd);
+                        exit(0);
+                    }
+                    break;
+                }
             }
         }
     }

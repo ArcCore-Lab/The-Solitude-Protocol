@@ -267,6 +267,21 @@ Today's summary:
 
 ---
 
+## 💤 Day 16: Hot Upgrade
+
+**Date:** 2025-01-27
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+A normal day as before...
+
+Today's summary:
+1. I have never thought about hot upgrade before. It's really amazing that we can upgrade a running server without downtime. This requires careful management of resources and state, but it's definitely worth the effort for high-availability systems.🔄
+
+---
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

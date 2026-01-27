@@ -4,10 +4,18 @@
 #include "include/unp.h"
 
 #define NUM_WORKERS 4
+#define LISTEN_FD_ENV "LISTEN_FD"
 
 #define LOG_BUFFER_SIZE 65536
 #define LOG_MAX_SIZE (100 * 1024 * 1024)
 #define LOG_DIR "../log"
+
+int g_listenfd = -1;
+int g_should_reload = 0;
+int g_should_shutdown = 0;
+
+char g_program_path[PATH_MAX] = {0};
+char *g_argv_copy[128] = {0};
 
 char *ffind(const char *filename, int *status_code);
 
@@ -154,6 +162,18 @@ void log_init(void);
 */
 void log_flush_periodic(void);
 
-void master_process(void);
+/*
+    The main master process function that handles worker processes.
+    Parameters:
+        listenfd: The listening socket file descriptor.
+*/
+void master_process(int listenfd);
+
+/*
+    Create and set up the listening socket.
+    Returns:
+        The listening socket file descriptor.
+*/
+int master_create_listenfd(void);
 
 #endif /*ZERO_COPY_H*/
