@@ -282,6 +282,19 @@ Today's summary:
 1. I have never thought about hot upgrade before. It's really amazing that we can upgrade a running server without downtime. This requires careful management of resources and state, but it's definitely worth the effort for high-availability systems.🔄
 
 ---
+
+## 💤 Day 17: Security (Actually Paperwork)
+
+**Date:** 2025-01-28
+**Status:** Systems Green.
+
+**Log:**
+
+Oops. Today I have to deal with other things about my paperwork. So I can't finish today's task. But I will try to catch up tomorrow. I know security is important. So I will not skip it. And I know this way obeys the principle of "improve a little every day" less. But I think it's acceptable this time. After all, sometimes paperwork is unavoidable. So there is no excuse for me to delay it further. I have to finish it tomorrow. And I will not lie to myself and everyone who cares about this project. After all, honesty is the best policy.
+
+OK , see you tomorrow.
+
+---
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
