@@ -3,6 +3,8 @@
 #include "atsp.h"
 #include "tspmalloc.h"
 
+static int g_log_socket = -1;
+
 static log_buffer_t g_log_buf = {
     .offset = 0,
     .logfd = -1,
@@ -123,8 +125,67 @@ static void get_client_ip(int sockfd, char *ip, size_t iplen) {
     }
 }
 
+void master_start_log_server(void) {
+    struct sockaddr_un addr;
+
+    g_log_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+
+    bzero(&addr, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, "/tmp/arccore_log.sock", sizeof(addr.sun_path) - 1);
+
+    unlink(addr.sun_path);
+    bind(g_log_socket, (struct sockaddr *)&addr, sizeof(addr));
+
+    fprintf(stderr, "Master: Log server listening on %s\n", addr.sun_path);
+}
+
+void master_handle_log_message(void) {
+    char buf[4096];
+    ssize_t n = recv(g_log_socket, buf, sizeof(buf) - 1, 0);
+
+    if (n > 0)
+    {
+        buf[n] = '\0';
+        log_write_line(buf);
+    }
+}
+
 void access_log(int sockfd, const char *method, const char *path, const char *version,
                int status_code, size_t bytes_sent, const char *referer, const char *user_agent) {
+
+    // char client_ip[INET_ADDRSTRLEN];
+    // char time_str[64];
+    // char log_line[2048];
+
+    // get_client_ip(sockfd, client_ip, sizeof(client_ip));
+    // format_time(time_str, sizeof(time_str));
+
+    // snprintf(log_line, sizeof(log_line),
+    //          "%s - - %s \"%s %s %s\" %d %zu \"%s\" \"%s\"\n",
+    //          client_ip,
+    //          time_str,
+    //          method,
+    //          path,
+    //          version,
+    //          status_code,
+    //          bytes_sent,
+    //          referer ? referer : "-",
+    //          user_agent ? user_agent : "-");
+
+    // // log_write_line(log_line);
+    // syslog(LOG_INFO, "%s", log_line);
+
+    static int log_sock = -1;
+    static struct sockaddr_un addr;
+
+    if (log_sock == -1)
+    {
+        log_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+        bzero(&addr, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, "/tmp/arccore_log.sock", sizeof(addr.sun_path) - 1);
+    }
 
     char client_ip[INET_ADDRSTRLEN];
     char time_str[64];
@@ -135,17 +196,12 @@ void access_log(int sockfd, const char *method, const char *path, const char *ve
 
     snprintf(log_line, sizeof(log_line),
              "%s - - %s \"%s %s %s\" %d %zu \"%s\" \"%s\"\n",
-             client_ip,
-             time_str,
-             method,
-             path,
-             version,
-             status_code,
-             bytes_sent,
+             client_ip, time_str, method, path, version,
+             status_code, bytes_sent,
              referer ? referer : "-",
              user_agent ? user_agent : "-");
 
-    log_write_line(log_line);
+    sendto(log_sock, log_line, strlen(log_line), 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
 void log_flush_periodic(void) {

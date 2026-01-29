@@ -176,4 +176,10 @@ void master_process(int listenfd);
 */
 int master_create_listenfd(void);
 
+void master_start_log_server(void);
+
+void master_handle_log_message(void);
+
+extern g_is_chrooted = 0;
+
 #endif /*ZERO_COPY_H*/

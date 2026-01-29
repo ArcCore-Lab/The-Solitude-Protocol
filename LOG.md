@@ -295,6 +295,23 @@ Oops. Today I have to deal with other things about my paperwork. So I can't fini
 OK , see you tomorrow.
 
 ---
+
+## 💤 Day 18: Test
+
+**Date:** 2025-01-29
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+I have finished all the work about security. Phew! It's really a tough day. But I made it. And I will not let anything distract me again. And today's task is test. It's really important. So I have to do it carefully. Fortunately, everything goes well today. I have implemented a simple test framework and wrote some test cases for the server. It was a bit challenging to get everything set up, but I managed to do it.
+
+Today's summary:
+Only one point -- In engineering, perfectionism must be abandoned. Sometimes, "good enough" is sufficient to meet requirements and deliver value. Striving for perfection can lead to diminishing returns and wasted resources. It's important to balance quality with practicality.⚖️
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

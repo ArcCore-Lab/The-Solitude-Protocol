@@ -52,5 +52,7 @@
 #include <dirent.h>
 #include <limits.h>
 #include <poll.h>
+#include <pwd.h>
+#include <grp.h>
 
 #endif /*_UNP_H*/

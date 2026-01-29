@@ -3,6 +3,92 @@
 #include "atsp.h"
 #include "tspmalloc.h"
 
+static int setup_worker_sandbox(void) {
+    char static_dir[PATH_MAX];
+    struct passwd *pw = NULL;
+    uid_t target_uid = 0;
+    gid_t target_gid = 0;
+
+    const char *low_priv_users[] = {"nobody", "www-data", "daemon", NULL};
+    
+    for (int i = 0; low_priv_users[i] != NULL; i++) {
+        pw = getpwnam(low_priv_users[i]);
+        if (pw != NULL) {
+            target_uid = pw->pw_uid;
+            target_gid = pw->pw_gid;
+            fprintf(stderr, "Will drop privileges to user: %s (UID: %d, GID: %d)\n",
+                    low_priv_users[i], target_uid, target_gid);
+            break;
+        }
+    }
+
+    if (pw == NULL) {
+        fprintf(stderr, "WARNING: No suitable low-privilege user found\n");
+        fprintf(stderr, "Available users to try: nobody, www-data, daemon\n");
+    }
+
+    if(realpath("../static", static_dir) == NULL) {
+        perror("realpath ../static");
+        return -1;
+    }
+
+    fprintf(stderr, "Worker sandbox: chroot to %s\n", static_dir);
+
+    if (chdir(static_dir) != 0) {
+        perror("chdir");
+        return -1;
+    }
+
+    if (chroot(".") != 0) {
+        perror("chroot");
+        fprintf(stderr, "ERROR: chroot failed. You need to run as root or use capabilities.\n");
+        fprintf(stderr, "Alternatively: sudo setcap cap_sys_chroot+ep ./security\n");
+        return -1;
+    }
+
+    if (chdir("/") != 0) {
+        perror("chdir /");
+        return -1;
+    }
+
+    g_is_chrooted = 1;
+
+    if (target_uid != 0 && target_gid != 0) {
+        if (setgroups(0, NULL) != 0) {
+            perror("setgroups");
+        }
+
+        if (setgid(target_gid) != 0) {
+            perror("setgid");
+            return -1;
+        }
+
+        if (setuid(target_uid) != 0) {
+            perror("setuid");
+            return -1;
+        }
+
+        fprintf(stderr, "Worker dropped privileges (UID: %d, GID: %d)\n", pw->pw_uid, pw->pw_gid);
+    } else {
+        fprintf(stderr, "WARNING: Running with elevated privileges (not recommended)\n");
+    }
+
+    if (access("/etc/passwd", F_OK) == 0) {
+        fprintf(stderr, "CRITICAL: Sandbox failed! Can still access /etc/passwd\n");
+        return -1;
+    }
+
+    if (getuid() == 0 || geteuid() == 0)
+    {
+        fprintf(stderr, "WARNING: Still running as root after privilege drop!\n");
+    }
+
+    fprintf(stderr, "Worker sandbox initialized successfully\n");
+    fprintf(stderr, "Current UID: %d, EUID: %d, GID: %d, EGID: %d\n", getuid(), geteuid(), getgid(), getegid());
+
+    return 0;
+}
+
 static void handle_reload(int sig) {
     (void)sig;
     g_should_reload = 1;
@@ -61,6 +147,11 @@ void worker_loop(int worker_id, int listenfd) {
 
     time_t last_log_flush = 0;
 
+    if (setup_worker_sandbox() != 0) {
+        fprintf(stderr, "Worker %d: Sandbox setup failed, running without chroot\n", worker_id);
+        err_sys("sandbox setup failed");
+    }
+
     epfd = epoll_create(MAXFD);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
@@ -100,8 +191,6 @@ void worker_loop(int worker_id, int listenfd) {
                 ev.events = EPOLLIN;
                 ev.data.fd = connfd;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
-
-
             } else if (events[i].events & EPOLLIN) {
                 if ((n = read(sockfd, buf, MAXLINE)) <= 0) {
                     request_t *req;
@@ -200,6 +289,8 @@ void master_process(int listenfd) {
     signal(SIGTERM, handle_shutdown);
     signal(SIGCHLD, SIG_IGN);
 
+    master_start_log_server();
+
     for (i = 0; i < NUM_WORKERS; i++) {
         pids[i] = fork();
 
@@ -237,6 +328,8 @@ void master_process(int listenfd) {
             g_should_reload = 0;
             g_should_shutdown = 1;
         }
+
+        master_handle_log_message();
 
         if (g_should_shutdown) {
             fprintf(stderr, "Master shutting down gracefully...\n");
