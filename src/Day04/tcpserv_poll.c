@@ -1,19 +1,67 @@
-/*
-    Added built-in keep-alive; 
-    wrk-verified stable at 1 k QPS without crashes.
-*/
+#include "unp_day04.h"
 
-#include "include/unp.h"
-#include "lib/tsp.h"
+// lib/error.c
+int deamon_proc;
 
+static void err_doit(int errnoflag, int level, const char *fmt, va_list ap)
+{
+    int errno_save, n;
+    char buf[MAXLINE + 1];
+
+    errno_save = errno;
+#ifdef HAVE_VSNPRINTF
+    vsnprintf(buf, MAXLINE, fmt, ap);
+#else
+    vsprintf(buf, fmt, ap);
+#endif
+    n = strlen(buf);
+    if (errnoflag)
+        snprintf(buf + n, MAXLINE - n, ": %s", strerror(errno_save));
+    strcat(buf, "\n");
+
+    if (deamon_proc)
+    {
+        syslog(level, buf);
+    }
+    else
+    {
+        fflush(stdout);
+        fputs(buf, stderr);
+        fflush(stderr);
+    }
+
+    return;
+}
+
+void err_sys(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    err_doit(1, LOG_INFO, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+
+void err_quit(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    err_doit(0, LOG_INFO, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+
+// src/Day04/tcpserv_poll.c
 int main(int argc, char **argv) {
-    int i, maxi, nready, sockfd, timeout, listenfd, connfd;
+    int i, maxi, listenfd, connfd, sockfd;
+    int nready, timeout;
     ssize_t n;
-    socklen_t clilen;
     char buf[MAXLINE];
+    socklen_t clilen;
     struct pollfd client[MAXFD];
     struct sockaddr_in servaddr, cliaddr;
-
     static const char http_resp[] =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
@@ -21,7 +69,7 @@ int main(int argc, char **argv) {
         "Keep-Alive: timeout=8\r\n"
         "Content-Length: 5\r\n"
         "\r\n"
-        "boom\n";
+        "pong\n";
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -36,9 +84,8 @@ int main(int argc, char **argv) {
 
     client[0].fd = listenfd;
     client[0].events = POLLRDNORM;
-    for (i = 1; i < MAXFD; i++) {
+    for (i = 1; i < MAXFD; i++)
         client[i].fd = -1;
-    }
     maxi = 0;
 
     for (;;) {
@@ -46,7 +93,7 @@ int main(int argc, char **argv) {
         nready = poll(client, maxi + 1, timeout);
 
         if (nready == 0) {
-            for (i = 1; i < MAXFD; i++) {
+            for (i = 1; i <= maxi; i++) {
                 if ( (sockfd = client[i].fd) < 0 ) continue;
 
                 close(sockfd);
@@ -59,7 +106,7 @@ int main(int argc, char **argv) {
 
         if (client[0].revents & POLLRDNORM) {
             clilen = sizeof(cliaddr);
-            connfd = accept(listenfd, (SA *) &servaddr, &clilen);
+            connfd = accept(listenfd, (SA *)&cliaddr, &clilen);
 
             for (i = 1; i < MAXFD; i++) {
                 if (client[i].fd < 0) {
@@ -77,7 +124,7 @@ int main(int argc, char **argv) {
             if (--nready <= 0) continue;
         }
 
-        for (i = 1; i < maxi; i++) {
+        for (i = 1; i <= maxi; i++) {
             if ( (sockfd = client[i].fd) < 0 ) continue;
 
             if (client[i].revents & (POLLRDNORM | POLLERR)) {
@@ -86,13 +133,13 @@ int main(int argc, char **argv) {
                     client[i].fd = -1;
                     continue;
                 }
+
+                write(sockfd, http_resp, sizeof(http_resp) - 1);
+
+                client[i].events = POLLRDNORM;
+
+                if (--nready <= 0) break;
             }
-
-            write(sockfd, http_resp, sizeof(http_resp) - 1);
-
-            client[i].events = POLLRDNORM;
-
-            if (--nready <= 0) continue;
         }
     }
 }

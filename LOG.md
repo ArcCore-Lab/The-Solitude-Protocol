@@ -312,6 +312,23 @@ Only one point -- In engineering, perfectionism must be abandoned. Sometimes, "g
 
 ---
 
+## 💤 Day 19: FlameGraph
+
+**Date:** 2025-01-30
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+I have changed this projects's architecture. From then on, this project is just a pure record of my offline learning journey. Because I have found that it's difficult to balance learning and module development, and now the code has more than 2000 lines. So I decide to focus on learning first. After this protocol, I will spend some time to review and summarize what I have learned these days. And then I will create a new project to straighten out my code. So please bear witness this change. I think it's a wise choice. After all, learning is the most important thing for me now. (This is my first time undertaking such a complex and large project offline alone. So I have to admit that I still have a lot to learn and improve. But I believe that with persistence and dedication, I can overcome these challenges and achieve my goals.)
+
+Today's summary:
+1. Performance profiling is essential for optimizing system performance. Tools like `perf` and FlameGraph provide valuable insights into CPU usage and bottlenecks, enabling targeted optimizations.📊
+2. Continuous learning and improvement are key to success in software development. Embracing new tools and techniques helps stay ahead in a rapidly evolving field.📚
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

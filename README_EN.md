@@ -28,12 +28,9 @@ I will enter complete social isolation, driven by the trinity of **Philosophy ×
 ```
 .
 ├── src/            # Core source code
-├── include/        # Public headers
-├── tests/          # Unit tests & performance benchmarks
 ├── LOG.md          # Daily technical & philosophical journal
 ├── PLAN.md         # Project plan & execution details
-├── README.md       # Project overview (this file)
-└── Makefile        # Build scripts
+└── README.md       # Project overview (this file)
 ```
 
 ---
@@ -62,6 +59,12 @@ I will enter complete social isolation, driven by the trinity of **Philosophy ×
 
 **MIT License © 2026 Howell Stark**  
 > *Built in Silence. Released with Fire.*
+
+---
+
+### 📌 Additional Information
+
+This project is just a record of my personal experiment in focused development. So if you want to know every step I took, please refer to the [LOG.md](LOG.md) file for daily updates and `src/` directory for the daily source code.
 
 ---
 

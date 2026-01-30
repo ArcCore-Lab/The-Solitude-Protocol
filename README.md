@@ -28,12 +28,9 @@
 ```
 .
 ├── src/            # 核心源代码
-├── include/        # 公共头文件
-├── tests/          # 单元测试与性能基准
 ├── LOG.md          # 每日技术与思想日志
 ├── PLAN.md         # 项目计划与执行细则
-├── README.md       # 项目总纲 (本文件)
-└── Makefile        # 工程构建脚本
+└── README.md       # 项目总纲 (本文件)
 ```
 
 ---
@@ -62,6 +59,12 @@
 
 **MIT License © 2026 Howell Stark**  
 > *Built in Silence. Released with Fire.*
+
+---
+
+### 📌 Additional Information
+
+这个项目只是我个人专注开发实验的记录。如果你想了解我完成每一步的细节，请参考每日更新的 [LOG.md](LOG.md) 文件以及每日源码所在的 `src/` 目录。
 
 ---
 

@@ -1,22 +1,69 @@
-/*
-    Simple HTTP/0.9 echo server – do NOT test with normal HTTP way.
-        - `$nc localhost 9877` (Once connected, anything you type will be echoed back verbatim.)
-        - `$echo -n "hello" | curl --http0.9 --data-binary @- localhost:9877`
-*/
+#include "unp_day01.h"
 
-#include "include/unp.h"
-#include "lib/tsp.h"
+// lib/error.c
+int deamon_proc;
 
+static void err_doit(int errnoflag, int level, const char *fmt, va_list ap)
+{
+    int errno_save, n;
+    char buf[MAXLINE + 1];
+
+    errno_save = errno;
+#ifdef HAVE_VSNPRINTF
+    vsnprintf(buf, MAXLINE, fmt, ap);
+#else
+    vsprintf(buf, fmt, ap);
+#endif
+    n = strlen(buf);
+    if (errnoflag)
+        snprintf(buf + n, MAXLINE - n, ": %s", strerror(errno_save));
+    strcat(buf, "\n");
+
+    if (deamon_proc)
+    {
+        syslog(level, buf);
+    }
+    else
+    {
+        fflush(stdout);
+        fputs(buf, stderr);
+        fflush(stderr);
+    }
+
+    return;
+}
+
+void err_sys(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    err_doit(1, LOG_INFO, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+
+void err_quit(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    err_doit(0, LOG_INFO, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+
+// src/Day01/tcpserver.c
 void str_echo(int sockfd) {
     size_t n;
     char buf[MAXLINE];
 
 again:
-    while ( (n = read(sockfd, buf, MAXLINE)) > 0 )  {
+    while ( (n = read(sockfd, buf, MAXLINE)) > 0 ) {
         write(sockfd, buf, n);
     }
 
-    if (n < 0 && errno == EINTR) {
+    if(n < 0 && errno == EINTR) {
         goto again;
     } else if (n < 0) {
         err_sys("str_echo: read error");
@@ -43,7 +90,7 @@ int main(int argc, char **argv) {
         clilen = sizeof(cliaddr);
         connfd = accept(listenfd, (SA *) &cliaddr, &clilen);
 
-        if( (childpid = fork()) == 0 ) {
+        if ( (childpid = fork()) == 0 ) {
             close(listenfd);
             str_echo(connfd);
             exit(0);

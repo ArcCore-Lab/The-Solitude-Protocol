@@ -1,1 +1,0 @@
-flag{this_is _really_a_test_flag}
