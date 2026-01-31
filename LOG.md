@@ -329,6 +329,23 @@ Today's summary:
 
 ---
 
+## 💤 Day 20: Summary and Report
+
+**Date:** 2025-01-31
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is the first phase's last day. I have optimized and reviewed the whole server. Although there are still many things to improve, I think I have done my best in this period. Since I haven't reorganized and consolidated the code yet -- I had said it yesterday, I just spent my time writing what I will use after the whole protocol. So I think it's acceptable that I don't really do a big summary today. After all, the most important thing is to learn and improve. And I have done it well these days.
+
+Today's summary: A normal day as before...
+
+I will handle the memory tomorrow again. This is an interesting challenge. See you.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)

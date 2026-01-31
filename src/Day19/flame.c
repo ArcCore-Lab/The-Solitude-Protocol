@@ -423,15 +423,27 @@ static void master_start_log_server(void) {
     struct sockaddr_un addr;
 
     g_log_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (g_log_socket < 0) {
+        perror("socket");
+        return;
+    }
 
     bzero(&addr, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, "/tmp/arccore_log.sock", sizeof(addr.sun_path) - 1);
+    addr.sun_path[0] = '\0';
+    strncpy(addr.sun_path + 1, "arccore_log_socket", sizeof(addr.sun_path) - 2);
 
-    unlink(addr.sun_path);
-    bind(g_log_socket, (struct sockaddr *)&addr, sizeof(addr));
+    socklen_t addr_len = sizeof(addr.sun_family) + strlen(addr.sun_path + 1) + 1;
 
-    fprintf(stderr, "Master: Log server listening on %s\n", addr.sun_path);
+    if (bind(g_log_socket, (SA *)&addr, addr_len) < 0) {
+        perror("bind log socket");
+        close(g_log_socket);
+        return;
+    }
+
+    fcntl(g_log_socket, F_SETFL, O_NONBLOCK);
+
+    fprintf(stderr, "Master: Log server listening on %s\n", addr.sun_path + 1);
 }
 
 static void master_handle_log_message(void) {
@@ -476,9 +488,15 @@ void access_log(int sockfd, const char *method, const char *path, const char *ve
 
     if (log_sock == -1) {
         log_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+        if (log_sock < 0) {
+            perror("Worker: create log socket");
+            return;
+        }
+        
         bzero(&addr, sizeof(addr));
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, "/tmp/arccore_log.sock", sizeof(addr.sun_path) - 1);
+        addr.sun_path[0] = '\0';
+        strncpy(addr.sun_path + 1, "arccore_log_socket", sizeof(addr.sun_path) - 2);
     }
 
     char client_ip[INET_ADDRSTRLEN];
@@ -495,7 +513,13 @@ void access_log(int sockfd, const char *method, const char *path, const char *ve
              referer ? referer : "-",
              user_agent ? user_agent : "-");
 
-    sendto(log_sock, log_line, strlen(log_line), 0, (struct sockaddr *)&addr, sizeof(addr));
+    socklen_t addr_len = sizeof(addr.sun_family) + strlen(addr.sun_path + 1) + 1;
+    ssize_t ret = sendto(log_sock, log_line, strlen(log_line), 0,
+                         (struct sockaddr *)&addr, addr_len);
+
+    if (ret < 0) {
+        fprintf(stderr, "Worker log fallback: %s", log_line);
+    }
 }
 
 void log_flush_periodic(void)
@@ -1645,6 +1669,8 @@ void master_process(int listenfd) {
     pid_t pids[NUM_WORKERS];
     int i, status;
     int worker_count = NUM_WORKERS;
+    int epfd;
+    struct epoll_event ev, events[MAXFD];
 
     signal(SIGHUP, handle_reload);
     signal(SIGTERM, handle_shutdown);
@@ -1652,12 +1678,22 @@ void master_process(int listenfd) {
 
     master_start_log_server();
 
+    epfd = epoll_create(10);
+    if (epfd < 0) {
+        err_sys("epoll_create error");
+    }
+
+    ev.events = EPOLLIN;
+    ev.data.fd = g_log_socket;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, g_log_socket, &ev);
+
     for (i = 0; i < NUM_WORKERS; i++) {
         pids[i] = fork();
 
         if (pids[i] < 0) {
             err_sys("fork error");
         } else if (pids[i] == 0) {
+            close(epfd);
             worker_loop(i, listenfd);
             exit(0);
         }
@@ -1666,6 +1702,16 @@ void master_process(int listenfd) {
     fprintf(stderr, "Master process (PID: %d) spawned %d workers\n", getpid(), NUM_WORKERS);
 
     for (;;) {
+        int nready = epoll_wait(epfd, events, MAXFD, 100);
+
+        for (i = 0; i < nready; i++) {
+            if (events[i].data.fd == g_log_socket && (events[i].events & EPOLLIN)) {
+                master_handle_log_message();
+            }
+        }
+
+        log_flush_periodic();
+
         if (g_should_reload) {
             fprintf(stderr, "Master received SIGHUP, preparing reload...\n");
 
@@ -1690,8 +1736,6 @@ void master_process(int listenfd) {
             g_should_shutdown = 1;
         }
 
-        master_handle_log_message();
-
         if (g_should_shutdown) {
             fprintf(stderr, "Master shutting down gracefully...\n");
 
@@ -1707,10 +1751,13 @@ void master_process(int listenfd) {
             }
 
             fprintf(stderr, "All workers shut down, master exiting\n");
+            log_flush_periodic();
+            close(g_log_socket);
+            close(epfd);
             break;
         }
 
-        pid_t dead_pid = wait(&status);
+        pid_t dead_pid = waitpid(-1, &status, WNOHANG);
         if (dead_pid > 0) {
             for (i = 0; i < worker_count; i++) {
                 if (pids[i] == dead_pid) {
@@ -1720,6 +1767,7 @@ void master_process(int listenfd) {
                     if (pids[i] < 0) {
                         err_sys("fork error in respawn");
                     } else if (pids[i] == 0) {
+                        close(epfd);
                         worker_loop(i, listenfd);
                         exit(0);
                     }

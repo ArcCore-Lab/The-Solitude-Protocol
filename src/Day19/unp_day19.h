@@ -62,6 +62,6 @@
 
 #define LOG_BUFFER_SIZE 65536
 #define LOG_MAX_SIZE (100 * 1024 * 1024)
-#define LOG_DIR "../log"
+#define LOG_DIR "../static/tmp/log"
 
 #endif /*_UNP_H*/
