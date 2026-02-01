@@ -346,6 +346,23 @@ I will handle the memory tomorrow again. This is an interesting challenge. See y
 
 ---
 
+## 🧱 Day 21: mmap and minimum heap
+
+**Date:** 2025-02-01
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today I achieved a minimum heap using `mmap`. It was quite amazing to see how memory mapping works and how it can be used to manage memory efficiently. Although the implementation is still basic, I believe it's a good starting point for further exploration. And I have finally known that using `mmap` to achieve minimum heap is not so difficult as I thought before. It's just achieved the different algorithm about heap. It's so simple and I had never thought that algorithm can be used like this.
+
+Today's summary:
+1. Memory mapping with `mmap` provides a flexible way to manage memory. It allows for efficient allocation and deallocation of memory regions, making it suitable for implementing custom memory allocators.🧠
+2. Understanding low-level memory management is crucial for building efficient systems. It enables developers to optimize memory usage and improve performance.⚙️
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
