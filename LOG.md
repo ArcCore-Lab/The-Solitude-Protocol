@@ -363,6 +363,19 @@ Today's summary:
 
 ---
 
+## 🧱 Day 22: Thread Cache
+
+**Date:** 2025-02-02
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today I feel bad because I had a headache and cold. So I didn't do much work. But I still managed to implement a basic thread cache for memory allocation. It was a bit challenging to get everything working correctly, but I think it's a good start. I will continue to improve it tomorrow. Now rest is more important. So I will sleep early today.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
