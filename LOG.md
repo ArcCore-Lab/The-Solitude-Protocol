@@ -376,6 +376,23 @@ Today I feel bad because I had a headache and cold. So I didn't do much work. Bu
 
 ---
 
+## 🧱 Day 23: Size Classes
+
+**Date:** 2025-02-03
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today I implemented size classes for memory allocation. It was quite interesting to see how different size classes can help optimize memory usage and reduce fragmentation. Although the implementation is still basic, I believe it's a good starting point for further exploration.
+
+Today's summary:
+1. Size classes help optimize memory allocation by grouping similar-sized requests together. This reduces fragmentation and improves allocation efficiency.📏
+2. Implementing size classes requires careful consideration of allocation patterns and usage scenarios. It's a complex but rewarding endeavor.🧩
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
