@@ -22,7 +22,7 @@
 
 typedef struct SpanMapEntry {
     void *addr;
-    struct Span *span;
+    Span *span;
     struct SpanMapEntry *next;
 } SpanMapEntry;
 

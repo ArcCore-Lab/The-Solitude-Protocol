@@ -393,6 +393,19 @@ Today's summary:
 
 ---
 
+## 🧱 Day 24: Thinkpad x230
+
+**Date:** 2025-02-04
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+OK, today I did not do much work on memory allocation. Instead, I spent the whole night setting up my ThinkPad X230 for development. I bought this laptop recently and I want to use it as my main development machine. So I installed Arch Linux(Omarchy), configured the environment, and set up all the necessary tools. You know the users of linux will always meet some problems. Actually I resolved the problem of gpu in ghostty. It was quite a lot of work, but I'm happy with the result. Now I can code anywhere I want!
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
