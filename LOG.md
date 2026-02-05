@@ -406,6 +406,19 @@ OK, today I did not do much work on memory allocation. Instead, I spent the whol
 
 ---
 
+## 🧱 Day 25: Test and Report
+
+**Date:** 2025-02-05
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Do something maybe easy, but optimize something is actually hard. My first version of tc_malloc is only 4.2% faster than the system's malloc. But after optimization, it's lower than first version... I will be mad! Everytime I try to optimize someting， it will make it worse. But I will not give up. Today' s task is fisnished(maybe). But I will continue to optimize it in the future. After all, optimization is a never-ending process. There is always room for improvement, and I will keep striving to make it better.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
