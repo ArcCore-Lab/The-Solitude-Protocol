@@ -441,6 +441,17 @@ Unfortunately, I have to deal with some paperwork today. My Dr. had check my pap
 
 ---
 
+## 🧱 Day 28: Still PaperWork
+
+**Date:** 2025-02-08
+**Status:** Systems Green.
+
+**Log:**
+
+Unfortunately, I still have to deal with some paperwork today. But it's good to know maybe this is the last day of paperwork. And I can finally send my paper to the journal. It's really a relief. After all, I have been working on this paper for a long time and it's finally ready for submission. I will try to finish it as soon as possible and get back to coding. After all, I have a lot of work to do and I want to make the most of this protocol. So I will not let anything distract me again. See you tomorrow.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
