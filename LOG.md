@@ -452,6 +452,19 @@ Unfortunately, I still have to deal with some paperwork today. But it's good to 
 
 ---
 
+## 🧱 Day 29: Back
+
+**Date:** 2025-02-09
+**Status:** Systems Green.
+
+**Log:**
+
+OK. Actually, I had learnt OS several months ago at shcool, but I still don't know what is OS and how it works. As for me, the knowledge I learnt at school is just for exam -- I actually know how to complex algorithms work and how to compute some problems? So I think I should restart learning OS from the beginning to understand the foundation of this digital world.
+
+After a long time of learning, it was so cool that the OS I built can run by qemu. Although it's just a simple OS, it's really amazing to see it in action. I will continue to improve it and add more features in the future. This is just the beginning of my journey into operating systems, and I'm excited to see where it takes me.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
