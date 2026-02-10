@@ -465,6 +465,19 @@ After a long time of learning, it was so cool that the OS I built can run by qem
 
 ---
 
+## 🧱 Day 30: Hard and Tired
+
+**Date:** 2025-02-10
+**Status:** Systems Green.
+
+**Log:**
+
+Fix some bugs left from yesterday, and add some text comments to the code for better understanding.
+
+Today is a very hard day. I have finished all the task about OS (including the task I left before). But OS is really interesting and this is my first time to build it. This is also the first time to use assembly language. It's really hard for me. But I enjoy the process. I will continue to improve it in the future. After all, learning is a never-ending process, and there is always room for improvement. I will keep striving to make it better. Tomorrow is the last day of this protocol. I will write a summary and report about this protocol. I will also review the whole codebase and make some optimizations. I hope I can do it well. See you tomorrow.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
