@@ -478,6 +478,17 @@ Today is a very hard day. I have finished all the task about OS (including the t
 
 ---
 
+## 🧱 Day 31: Summary and Report
+
+**Date:** 2025-02-11
+**Status:** Systems Green.
+
+**Log:**
+
+Today is the last day of this protocol. I have finished all the tasks and achieved all the goals I set at the beginning. I have written what I want to say in the markdown file. See you in the next project.
+
+---
+
 <div align="center">
 
 [PLAN](PLAN.md) | [LOG](LOG.md) | [README](README.md)
